@@ -17,23 +17,16 @@ if torch.cuda.is_available():
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-num_epochs = 200
+num_epochs = 500
 batch_size = 64
 learning_rate = 0.001
 
-transform = transforms.Compose(
-    [
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomRotation(10),
-        transforms.RandomAffine(0, shear=10, scale=(0.8, 1.2)),
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,)),
-        transforms.RandomErasing(
-            p=0.25, scale=(0.02, 0.33), ratio=(0.3, 3.3), value=0, inplace=False
-        ),
-    ]
-)
+transform = transforms.Compose([
+    transforms.RandomCrop(32, padding=4),
+    transforms.RandomHorizontalFlip(),
+    transforms.ToTensor(),
+    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
+])
 
 
 train_dataset = datasets.CIFAR10(
@@ -64,21 +57,21 @@ class SimpleCNN(nn.Module):
         super(SimpleCNN, self).__init__()
 
         self.relu = nn.LeakyReLU(0.1)
-        self.dropout = nn.Dropout(0.1)
+        self.dropout = nn.Dropout(0.05)
 
         self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1)
         self.batchnorm1 = nn.BatchNorm2d(32)
-        self.pool1 = nn.AvgPool2d(kernel_size=3, stride=2)
+        self.pool1 = nn.MaxPool2d(kernel_size=3, stride=2)
 
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
         self.batchnorm2 = nn.BatchNorm2d(64)
-        self.pool2 = nn.AvgPool2d(kernel_size=3, stride=2)
+        self.pool2 = nn.MaxPool2d(kernel_size=3, stride=2)
 
         self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
         self.batchnorm3 = nn.BatchNorm2d(128)
-        self.pool3 = nn.AvgPool2d(kernel_size=3, stride=2)
+        self.pool3 = nn.MaxPool2d(kernel_size=3, stride=2)
 
-        self.global_avg_pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.global_max_pool = nn.AdaptiveMaxPool2d((1, 1))
 
         self.fc1 = nn.Linear(128, 128)
         self.fc2 = nn.Linear(128, 32)
@@ -91,7 +84,7 @@ class SimpleCNN(nn.Module):
         x = self.pool2(x)
         x = self.dropout(self.relu(self.batchnorm3(self.conv3(x))))
         x = self.pool3(x)
-        x = self.global_avg_pool(x)
+        x = self.global_max_pool(x)
         x = x.view(x.size(0), -1)
         x = self.dropout(self.relu(self.fc1(x)))
         x = self.dropout(self.fc2(x))
@@ -172,6 +165,10 @@ def train(num_epochs, model, train_loader, test_loader, optimizer, criterion):
 
         test_acc, test_loss = evaluate(test_loader, model)
 
+        # Confusion matrix
+        
+        
+        
         print(
             f"Epoch [{epoch+1}/{num_epochs}] - "
             f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}% | "
@@ -183,6 +180,7 @@ print("Model Summary:")
 summary(model, (3, 32, 32))
 
 if __name__ == "__main__":
+    print("Running on device:", device)
     train(num_epochs, model, train_loader, test_loader, optimizer, criterion)
 
     test_acc, _ = evaluate(test_loader, model)
