@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import random
 import numpy as np
+from torchsummary import summary
 
 seed = 42
 random.seed(seed)
@@ -26,9 +27,11 @@ transform = transforms.Compose(
         transforms.RandomRotation(10),
         transforms.RandomAffine(0, shear=10, scale=(0.8, 1.2)),
         transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
-        transforms.ToTensor(), 
+        transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,)),
-        transforms.RandomErasing(p=0.25, scale=(0.02, 0.33), ratio=(0.3, 3.3), value=0, inplace=False),
+        transforms.RandomErasing(
+            p=0.25, scale=(0.02, 0.33), ratio=(0.3, 3.3), value=0, inplace=False
+        ),
     ]
 )
 
@@ -57,7 +60,7 @@ test_loader = DataLoader(
 
 
 class SimpleCNN(nn.Module):
-    def __init__(self, input_size=(32, 32), num_classes=10):
+    def __init__(self, num_classes=10):
         super(SimpleCNN, self).__init__()
 
         self.relu = nn.LeakyReLU(0.1)
@@ -75,14 +78,9 @@ class SimpleCNN(nn.Module):
         self.batchnorm3 = nn.BatchNorm2d(128)
         self.pool3 = nn.AvgPool2d(kernel_size=3, stride=2)
 
-        with torch.no_grad():
-            dummy_input = torch.zeros(1, 3, *input_size)
-            out = self.pool1(self.relu(self.batchnorm1(self.conv1(dummy_input))))
-            out = self.pool2(self.relu(self.batchnorm2(self.conv2(out))))
-            out = self.pool3(self.relu(self.batchnorm3(self.conv3(out))))
-            flattened_size = out.numel()
+        self.global_avg_pool = nn.AdaptiveAvgPool2d((1, 1))
 
-        self.fc1 = nn.Linear(flattened_size, 128)
+        self.fc1 = nn.Linear(128, 128)
         self.fc2 = nn.Linear(128, 32)
         self.fc3 = nn.Linear(32, num_classes)
 
@@ -93,11 +91,12 @@ class SimpleCNN(nn.Module):
         x = self.pool2(x)
         x = self.dropout(self.relu(self.batchnorm3(self.conv3(x))))
         x = self.pool3(x)
+        x = self.global_avg_pool(x)
         x = x.view(x.size(0), -1)
         x = self.dropout(self.relu(self.fc1(x)))
         x = self.dropout(self.fc2(x))
         x = self.dropout(self.fc3(x))
-
+    
         return x
 
 
@@ -179,6 +178,9 @@ def train(num_epochs, model, train_loader, test_loader, optimizer, criterion):
             f"Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.2f}%"
         )
 
+
+print("Model Summary:")
+summary(model, (3, 32, 32))
 
 if __name__ == "__main__":
     train(num_epochs, model, train_loader, test_loader, optimizer, criterion)
