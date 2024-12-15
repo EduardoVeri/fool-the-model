@@ -24,6 +24,7 @@ num_epochs = 75
 batch_size = 32
 learning_rate = 0.001
 path_to_data = "../data/140k-real-and-fake-faces/"
+path_to_csv = "../data/140k-real-and-fake-faces/"
 
 
 class DeepFake(Dataset):
@@ -54,7 +55,7 @@ transform = transforms.Compose([
 
 train_loader = DataLoader(
     DeepFake(
-        csv_file=path.join(path_to_data, "train.csv"),
+        csv_file=path.join(path_to_csv, "train.csv"),
         root_dir=path_to_data,
         transform=transform
     ),
@@ -65,7 +66,7 @@ train_loader = DataLoader(
 
 valid_loader = DataLoader(
     DeepFake(
-        csv_file=path.join(path_to_data, "valid.csv"),
+        csv_file=path.join(path_to_csv, "valid.csv"),
         root_dir=path_to_data,
         transform=transform
     ),
@@ -76,7 +77,7 @@ valid_loader = DataLoader(
 
 test_loader = DataLoader(
     DeepFake(
-        csv_file=path.join(path_to_data, "test.csv"),
+        csv_file=path.join(path_to_csv, "test.csv"),
         root_dir=path_to_data,
         transform=transform
     ),
@@ -174,13 +175,13 @@ def evaluate(loader, model):
     return accuracy, avg_loss
 
 
-def train(num_epochs, model, train_loader, test_loader, optimizer, criterion):
+def train(num_epochs, model, train_loader, valid_loader, optimizer, criterion):
+    last_val_acc = 0.0
     for epoch in range(num_epochs):
         model.train()
         total_loss = 0.0
         correct = 0
         total = 0
-        last_test_acc = 0.0
         for images, labels in tqdm(
             train_loader, desc=f"Epoch {epoch+1}/{num_epochs}", leave=False
         ):
@@ -202,29 +203,33 @@ def train(num_epochs, model, train_loader, test_loader, optimizer, criterion):
         train_acc = 100.0 * correct / total
         train_loss = total_loss / len(train_loader)
 
-        test_acc, test_loss = evaluate(test_loader, model)
+        val_acc, val_loss = evaluate(valid_loader, model)
 
-        # after every step, save the model if the test accuracy has increased
-        if test_acc > last_test_acc:
-            torch.save(model.state_dict(), "simple_cnn.pth")
-            last_test_acc = test_acc
-
+        # Create a checkpoint when the test accuracy improves
+        if val_acc > last_val_acc:
+            torch.save(model.state_dict(), f"cnn_{epoch+1}_{val_acc:.2f}.pth")
+            last_val_acc = val_acc
+            last_epoch = epoch
+        
         print(
             f"Epoch [{epoch+1}/{num_epochs}] - "
             f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}% | "
-            f"Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.2f}%"
+            f"Test Loss: {val_loss:.4f}, Valid Acc: {val_acc:.2f}%"
         )
+        
+        if epoch - last_epoch > patience:
+            break
 
 
-print("Model Summary:")
-summary(model, (3, 128, 128))
 
 if __name__ == "__main__":
+    print("Model Summary:")
+    summary(model, (3, 128, 128))
     print("Running on device:", device)
-    train(num_epochs, model, train_loader, test_loader, optimizer, criterion)
+    train(num_epochs, model, train_loader, valid_loader, optimizer, criterion)
 
     test_acc, _ = evaluate(test_loader, model)
     print(f"Final Test Accuracy: {test_acc:.2f}%")
 
-    torch.save(model.state_dict(), "simple_cnn.pth")
+    torch.save(model.state_dict(), "last_cnn.pth")
     print("Model saved as simple_cnn.pth")
