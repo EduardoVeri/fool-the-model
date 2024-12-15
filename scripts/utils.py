@@ -2,6 +2,7 @@ import torch.nn as nn
 from torch.utils.data import Dataset
 from os import path
 from skimage import io, transform
+import pandas as pd
 
 class CNN(nn.Module):
     def __init__(self, num_classes=2):
