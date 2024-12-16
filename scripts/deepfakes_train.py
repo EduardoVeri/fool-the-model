@@ -14,6 +14,41 @@ from torchvision import transforms
 from tqdm import tqdm
 
 
+def get_args():
+    parser = argparse.ArgumentParser(description="Train a CNN for DeepFake detection.")
+    parser.add_argument(
+        "--data_dir",
+        type=str,
+        default="../data/140k-real-and-fake-faces/",
+        help="Path to dataset directory",
+    )
+    parser.add_argument(
+        "--csv_dir",
+        type=str,
+        default="../data/140k-real-and-fake-faces/",
+        help="Path to CSV files directory",
+    )
+    parser.add_argument(
+        "--save_model",
+        type=str,
+        default="best_cnn.pth",
+        help="Path to save the best model",
+    )
+    parser.add_argument(
+        "--num_epochs", type=int, default=75, help="Number of training epochs"
+    )
+    parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
+    parser.add_argument(
+        "--learning_rate", type=float, default=0.001, help="Learning rate"
+    )
+    parser.add_argument(
+        "--patience", type=int, default=5, help="Early stopping patience"
+    )
+    parser.add_argument("--seed", type=int, default=42, help="Random seed")
+
+    return parser.parse_args()
+
+
 def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
@@ -53,19 +88,16 @@ class CNN(nn.Module):
             nn.LeakyReLU(0.1),
             nn.MaxPool2d(2),
             nn.Dropout(0.05),
-
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64),
             nn.LeakyReLU(0.1),
             nn.MaxPool2d(2),
             nn.Dropout(0.05),
-
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.BatchNorm2d(128),
             nn.LeakyReLU(0.1),
             nn.MaxPool2d(2),
             nn.Dropout(0.05),
-
             nn.Conv2d(128, 256, kernel_size=3, padding=1),
             nn.BatchNorm2d(256),
             nn.LeakyReLU(0.1),
@@ -177,48 +209,12 @@ def train(
             epochs_no_improve += 1
 
         if epochs_no_improve >= patience:
-            logging.info(
-                f"Early stopping after {patience} epochs with no improvement."
-            )
+            logging.info(f"Early stopping after {patience} epochs with no improvement.")
             break
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Train a CNN for DeepFake detection."
-    )
-    parser.add_argument(
-        "--data_dir",
-        type=str,
-        default="../data/140k-real-and-fake-faces/",
-        help="Path to dataset directory",
-    )
-    parser.add_argument(
-        "--csv_dir",
-        type=str,
-        default="../data/140k-real-and-fake-faces/",
-        help="Path to CSV files directory",
-    )
-    parser.add_argument(
-        "--save_model",
-        type=str,
-        default="best_cnn.pth",
-        help="Path to save the best model",
-    )
-    parser.add_argument(
-        "--num_epochs", type=int, default=75, help="Number of training epochs"
-    )
-    parser.add_argument(
-        "--batch_size", type=int, default=32, help="Batch size"
-    )
-    parser.add_argument(
-        "--learning_rate", type=float, default=0.001, help="Learning rate"
-    )
-    parser.add_argument(
-        "--patience", type=int, default=5, help="Early stopping patience"
-    )
-    parser.add_argument("--seed", type=int, default=42, help="Random seed")
-    args = parser.parse_args()
+    args = get_args()
 
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s %(levelname)s:%(message)s"
