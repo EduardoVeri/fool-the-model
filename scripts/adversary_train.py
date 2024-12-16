@@ -10,7 +10,7 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from .utils import CNN, DeepFake  # Adjust the import as necessary
+from utils import CNN, DeepFakeDataset  # Adjust the import as necessary
 
 
 def set_seed(seed):
@@ -143,7 +143,7 @@ def main():
     # Dataset and DataLoader
     csv_file = os.path.join(args.data_dir, "train.csv")
     root_dir = os.path.join(args.data_dir, "train")
-    dataset = DeepFake(csv_file=csv_file, root_dir=root_dir, transform=transform)
+    dataset = DeepFakeDataset(csv_file=csv_file, root_dir=root_dir, transform=transform)
     data_loader = DataLoader(
         dataset, batch_size=args.batch_size, shuffle=True, num_workers=4
     )
