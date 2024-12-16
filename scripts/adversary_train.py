@@ -26,6 +26,7 @@ class Generator(nn.Module):
         self.model = nn.Sequential(
             nn.Conv2d(img_channels, 64, kernel_size=3, padding=1),
             nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout(0.3),
             nn.Conv2d(64, img_channels, kernel_size=3, padding=1),
             nn.Tanh(),
         )
@@ -164,8 +165,19 @@ def main():
     perceptual_loss = nn.MSELoss()
 
     # Optimizer
-    optimizer_g = optim.Adam(generator.parameters(), lr=args.lr)
+    optimizer_g = optim.Adam(generator.parameters(), lr=args.lr, weight_decay=1e-5)
 
+    # Configure logging in a file
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.FileHandler("adversarial_generator.log"),
+            logging.StreamHandler(),
+        ],
+    )
+    logging.info("Start training the adversarial generator...")
+    
     # Train the generator
     train(
         generator,
