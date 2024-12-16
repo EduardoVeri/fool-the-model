@@ -137,12 +137,16 @@ def main():
 
     # Transformations
     transform = transforms.Compose(
-        [transforms.Resize((args.img_size, args.img_size)), transforms.ToTensor()]
+        [
+            transforms.ToPILImage(),
+            transforms.Resize((args.img_size, args.img_size)),
+            transforms.ToTensor(),
+        ]
     )
 
     # Dataset and DataLoader
     csv_file = os.path.join(args.data_dir, "train.csv")
-    root_dir = os.path.join(args.data_dir, "train")
+    root_dir = os.path.join(args.data_dir)
     dataset = DeepFakeDataset(csv_file=csv_file, root_dir=root_dir, transform=transform)
     data_loader = DataLoader(
         dataset, batch_size=args.batch_size, shuffle=True, num_workers=4
@@ -150,7 +154,7 @@ def main():
 
     # Initialize models
     classifier = CNN().to(device)
-    classifier.load_state_dict(torch.load(args.classifier_path))
+    classifier.load_state_dict(torch.load(args.classifier_path, weights_only=True))
     classifier.eval()
 
     generator = Generator(img_channels=3).to(device)
