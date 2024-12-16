@@ -1,33 +1,30 @@
+import argparse
+import logging
+import os
+import random
+
+import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import datasets, transforms
+from skimage import io
 from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
 from tqdm import tqdm
-import random
-import numpy as np
-from torchsummary import summary
-import pandas as pd
-from os import path
-from skimage import io, transform
-
-seed = 42
-random.seed(seed)
-np.random.seed(seed)
-torch.manual_seed(seed)
-if torch.cuda.is_available():
-    torch.cuda.manual_seed_all(seed)
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-num_epochs = 75
-batch_size = 32
-learning_rate = 0.001
-path_to_data = "../data/140k-real-and-fake-faces/"
-path_to_csv = "../data/140k-real-and-fake-faces/"
 
 
-class DeepFake(Dataset):
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+
+class DeepFakeDataset(Dataset):
     def __init__(self, csv_file, root_dir, transform=None):
         self.data = pd.read_csv(csv_file)
         self.root_dir = root_dir
@@ -37,199 +34,268 @@ class DeepFake(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        image_path = path.join(self.root_dir, self.data.iloc[idx].loc["path"])
-        image = io.imread(image_path)
-        label = self.data.iloc[idx].loc["label"]
+        img_path = os.path.join(self.root_dir, self.data.iloc[idx]["path"])
+        image = io.imread(img_path)
+        label = self.data.iloc[idx]["label"]
 
         if self.transform:
             image = self.transform(image)
 
         return image, label
 
-transform = transforms.Compose([
-    transforms.ToPILImage(),
-    transforms.Resize((128, 128)),
-    transforms.ToTensor()
-])
-
-
-train_loader = DataLoader(
-    DeepFake(
-        csv_file=path.join(path_to_csv, "train.csv"),
-        root_dir=path_to_data,
-        transform=transform
-    ),
-    batch_size=batch_size,
-    shuffle=True,
-    num_workers=4,
-)
-
-valid_loader = DataLoader(
-    DeepFake(
-        csv_file=path.join(path_to_csv, "valid.csv"),
-        root_dir=path_to_data,
-        transform=transform
-    ),
-    batch_size=batch_size,
-    shuffle=True,
-    num_workers=4,
-)
-
-test_loader = DataLoader(
-    DeepFake(
-        csv_file=path.join(path_to_csv, "test.csv"),
-        root_dir=path_to_data,
-        transform=transform
-    ),
-    batch_size=batch_size,
-    shuffle=True,
-    num_workers=4,
-)
 
 class CNN(nn.Module):
     def __init__(self, num_classes=2):
         super(CNN, self).__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 32, kernel_size=3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.LeakyReLU(0.1),
+            nn.MaxPool2d(2),
+            nn.Dropout(0.05),
 
-        self.relu = nn.LeakyReLU(0.1)
-        self.dropout = nn.Dropout(0.05)
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(0.1),
+            nn.MaxPool2d(2),
+            nn.Dropout(0.05),
 
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1)
-        self.batchnorm1 = nn.BatchNorm2d(32)
-        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.LeakyReLU(0.1),
+            nn.MaxPool2d(2),
+            nn.Dropout(0.05),
 
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
-        self.batchnorm2 = nn.BatchNorm2d(64)
-        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
-
-        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
-        self.batchnorm3 = nn.BatchNorm2d(128)
-        self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
-
-        self.conv4 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1)
-        self.batchnorm4 = nn.BatchNorm2d(256)
-        self.pool4 = nn.MaxPool2d(kernel_size=2, stride=2)
-
-        self.global_max_pool = nn.AdaptiveAvgPool2d((1, 1))
-
-        self.fc1 = nn.Linear(256, 128)
-        self.fc2 = nn.Linear(128, 32)
-        self.fc3 = nn.Linear(32, num_classes)
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.LeakyReLU(0.1),
+            nn.MaxPool2d(2),
+            nn.Dropout(0.05),
+        )
+        self.classifier = nn.Sequential(
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten(),
+            nn.Linear(256, 128),
+            nn.LeakyReLU(0.1),
+            nn.Dropout(0.05),
+            nn.Linear(128, 32),
+            nn.LeakyReLU(0.1),
+            nn.Dropout(0.05),
+            nn.Linear(32, num_classes),
+        )
 
     def forward(self, x):
-        x = self.dropout(self.relu(self.batchnorm1(self.conv1(x))))
-        x = self.pool1(x)
-        x = self.dropout(self.relu(self.batchnorm2(self.conv2(x))))
-        x = self.pool2(x)
-        x = self.dropout(self.relu(self.batchnorm3(self.conv3(x))))
-        x = self.pool3(x)
-        x = self.dropout(self.relu(self.batchnorm4(self.conv4(x))))
-        x = self.pool4(x)
-        x = self.global_max_pool(x)
-        x = x.view(x.size(0), -1)
-        x = self.dropout(self.relu(self.fc1(x)))
-        x = self.dropout(self.fc2(x))
-        x = self.dropout(self.fc3(x))
-
+        x = self.features(x)
+        x = self.classifier(x)
         return x
 
 
 def initialize_weights(m):
-    if isinstance(m, nn.Conv2d):
-        nn.init.kaiming_normal_(m.weight, nonlinearity="relu")
-        if m.bias is not None:
-            nn.init.constant_(m.bias, 0)
-    elif isinstance(m, nn.Linear):
-        nn.init.kaiming_normal_(m.weight, nonlinearity="relu")
+    if isinstance(m, (nn.Conv2d, nn.Linear)):
+        nn.init.kaiming_normal_(m.weight, nonlinearity="leaky_relu")
         if m.bias is not None:
             nn.init.constant_(m.bias, 0)
 
 
-model = CNN().to(device)
-model.apply(initialize_weights)
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-
-
-def evaluate(loader, model):
-    """
-    Evaluate the model on a given dataset loader.
-    Returns: accuracy (%), average loss
-    """
+def evaluate(loader, model, device, criterion):
     model.eval()
     correct = 0
-    total = 0
     total_loss = 0.0
+    total_samples = 0
+
     with torch.no_grad():
-        for images, labels in loader:
+        for images, labels in tqdm(loader, desc="Evaluating", leave=False):
             images, labels = images.to(device), labels.to(device)
+
             outputs = model(images)
             loss = criterion(outputs, labels)
-            total_loss += loss.item()
+            total_loss += loss.item() * images.size(0)
 
             _, predicted = torch.max(outputs, 1)
-            total += labels.size(0)
+            total_samples += labels.size(0)
             correct += (predicted == labels).sum().item()
 
-    accuracy = 100.0 * correct / total
-    avg_loss = total_loss / len(loader)
+    accuracy = 100.0 * correct / total_samples
+    avg_loss = total_loss / total_samples
     return accuracy, avg_loss
 
 
-def train(num_epochs, model, train_loader, valid_loader, optimizer, criterion):
-    last_val_acc = 0.0
+def train(
+    model,
+    train_loader,
+    valid_loader,
+    optimizer,
+    criterion,
+    device,
+    num_epochs,
+    patience,
+    save_path,
+):
+    best_val_acc = 0.0
+    epochs_no_improve = 0
+
     for epoch in range(num_epochs):
         model.train()
         total_loss = 0.0
         correct = 0
-        total = 0
+        total_samples = 0
+
         for images, labels in tqdm(
-            train_loader, desc=f"Epoch {epoch+1}/{num_epochs}", leave=False
+            train_loader, desc=f"Epoch {epoch + 1}/{num_epochs}", leave=False
         ):
             images, labels = images.to(device), labels.to(device)
 
-            # Forward pass
+            optimizer.zero_grad()
             outputs = model(images)
             loss = criterion(outputs, labels)
 
-            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-            total_loss += loss.item()
+            total_loss += loss.item() * images.size(0)
             _, predicted = torch.max(outputs, 1)
-            total += labels.size(0)
+            total_samples += labels.size(0)
             correct += (predicted == labels).sum().item()
 
-        train_acc = 100.0 * correct / total
-        train_loss = total_loss / len(train_loader)
+        train_acc = 100.0 * correct / total_samples
+        train_loss = total_loss / total_samples
 
-        val_acc, val_loss = evaluate(valid_loader, model)
+        val_acc, val_loss = evaluate(valid_loader, model, device, criterion)
 
-        # Create a checkpoint when the test accuracy improves
-        if val_acc > last_val_acc:
-            torch.save(model.state_dict(), f"cnn_{epoch+1}_{val_acc:.2f}.pth")
-            last_val_acc = val_acc
-            last_epoch = epoch
-        
-        print(
-            f"Epoch [{epoch+1}/{num_epochs}] - "
+        logging.info(
+            f"Epoch {epoch + 1}/{num_epochs} | "
             f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}% | "
-            f"Test Loss: {val_loss:.4f}, Valid Acc: {val_acc:.2f}%"
+            f"Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.2f}%"
         )
-        
-        if epoch - last_epoch > patience:
+
+        if val_acc > best_val_acc:
+            best_val_acc = val_acc
+            epochs_no_improve = 0
+            torch.save(model.state_dict(), save_path)
+            logging.info(f"Validation accuracy improved, model saved at {save_path}")
+        else:
+            epochs_no_improve += 1
+
+        if epochs_no_improve >= patience:
+            logging.info(
+                f"Early stopping after {patience} epochs with no improvement."
+            )
             break
 
 
+def main():
+    parser = argparse.ArgumentParser(
+        description="Train a CNN for DeepFake detection."
+    )
+    parser.add_argument(
+        "--data_dir",
+        type=str,
+        default="../data/140k-real-and-fake-faces/",
+        help="Path to dataset directory",
+    )
+    parser.add_argument(
+        "--csv_dir",
+        type=str,
+        default="../data/140k-real-and-fake-faces/",
+        help="Path to CSV files directory",
+    )
+    parser.add_argument(
+        "--save_model",
+        type=str,
+        default="best_cnn.pth",
+        help="Path to save the best model",
+    )
+    parser.add_argument(
+        "--num_epochs", type=int, default=75, help="Number of training epochs"
+    )
+    parser.add_argument(
+        "--batch_size", type=int, default=32, help="Batch size"
+    )
+    parser.add_argument(
+        "--learning_rate", type=float, default=0.001, help="Learning rate"
+    )
+    parser.add_argument(
+        "--patience", type=int, default=5, help="Early stopping patience"
+    )
+    parser.add_argument("--seed", type=int, default=42, help="Random seed")
+    args = parser.parse_args()
+
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s:%(message)s"
+    )
+
+    set_seed(args.seed)
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    logging.info(f"Using device: {device}")
+
+    transform = transforms.Compose(
+        [
+            transforms.ToPILImage(),
+            transforms.Resize((128, 128)),
+            transforms.ToTensor(),
+        ]
+    )
+
+    train_dataset = DeepFakeDataset(
+        csv_file=os.path.join(args.csv_dir, "train.csv"),
+        root_dir=args.data_dir,
+        transform=transform,
+    )
+    valid_dataset = DeepFakeDataset(
+        csv_file=os.path.join(args.csv_dir, "valid.csv"),
+        root_dir=args.data_dir,
+        transform=transform,
+    )
+    test_dataset = DeepFakeDataset(
+        csv_file=os.path.join(args.csv_dir, "test.csv"),
+        root_dir=args.data_dir,
+        transform=transform,
+    )
+
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=4,
+        pin_memory=True,
+    )
+    valid_loader = DataLoader(
+        valid_dataset,
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=4,
+        pin_memory=True,
+    )
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=4,
+        pin_memory=True,
+    )
+
+    model = CNN().to(device)
+    model.apply(initialize_weights)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
+
+    train(
+        model,
+        train_loader,
+        valid_loader,
+        optimizer,
+        criterion,
+        device,
+        args.num_epochs,
+        args.patience,
+        args.save_model,
+    )
+
+    model.load_state_dict(torch.load(args.save_model))
+    test_acc, _ = evaluate(test_loader, model, device, criterion)
+    logging.info(f"Test Accuracy: {test_acc:.2f}%")
+
 
 if __name__ == "__main__":
-    print("Model Summary:")
-    summary(model, (3, 128, 128))
-    print("Running on device:", device)
-    train(num_epochs, model, train_loader, valid_loader, optimizer, criterion)
-
-    test_acc, _ = evaluate(test_loader, model)
-    print(f"Final Test Accuracy: {test_acc:.2f}%")
-
-    torch.save(model.state_dict(), "last_cnn.pth")
-    print("Model saved as simple_cnn.pth")
+    main()
