@@ -52,10 +52,11 @@ class CNN(nn.Module):
 
 
 class DeepFakeDataset(Dataset):
-    def __init__(self, csv_file, root_dir, transform=None):
+    def __init__(self, csv_file, root_dir, fraction = 1, transform=None):
         self.data = pd.read_csv(csv_file)
         self.root_dir = root_dir
         self.transform = transform
+        self.data = self.data.sample(frac=fraction).reset_index(drop=True)
 
     def __len__(self):
         return len(self.data)

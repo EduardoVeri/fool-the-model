@@ -9,6 +9,7 @@ import torch.optim as optim
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 from utils import CNN, DeepFakeDataset  # Adjust the import as necessary
 
@@ -51,6 +52,9 @@ def train(
 ):
     generator.train()
     classifier.eval()
+    loss_adv_list = []
+    loss_perceptual_list = []
+    total_loss_list = []
     for epoch in range(num_epochs):
         loop = tqdm(data_loader, desc=f"Epoch [{epoch+1}/{num_epochs}]", leave=False)
         for imgs, labels in loop:
@@ -68,6 +72,10 @@ def train(
             loss_perceptual = perceptual_loss(adv_imgs, imgs)
             total_loss = loss_adv + lambda_perceptual * loss_perceptual
 
+            loss_adv_list.append(loss_adv.item())
+            loss_perceptual_list.append(loss_perceptual.item())
+            total_loss_list.append(total_loss.item())
+            
             # Backpropagation
             optimizer.zero_grad()
             total_loss.backward()
@@ -94,35 +102,41 @@ def train(
             f"Victim Accuracy: {victim_acc.item():.4f}"
         )
 
+    plt.plot(loss_adv_list, label='Adversarial Loss')
+    plt.plot(loss_perceptual_list, label='Perceptual Loss')
+    plt.plot(total_loss_list, label='Total Loss')
+    plt.legend()
+    plt.show()
+
 
 def main():
     parser = argparse.ArgumentParser(description="Train an adversarial generator.")
     parser.add_argument(
-        "--data_dir",
+        "--data-dir",
         type=str,
         default="../data/140k-real-and-fake-faces/",
         help="Path to the dataset directory.",
     )
     parser.add_argument(
-        "--classifier_path",
+        "--classifier-path",
         type=str,
         required=True,
         help="Path to the pre-trained classifier checkpoint.",
     )
     parser.add_argument(
-        "--save_path",
+        "--save-path",
         type=str,
         default="adversarial_generator.pth",
         help="Path to save the generator model.",
     )
-    parser.add_argument("--img_size", type=int, default=128, help="Image size.")
-    parser.add_argument("--batch_size", type=int, default=16, help="Batch size.")
+    parser.add_argument("--img-size", type=int, default=128, help="Image size.")
+    parser.add_argument("--batch-size", type=int, default=16, help="Batch size.")
     parser.add_argument("--lr", type=float, default=0.0002, help="Learning rate.")
     parser.add_argument(
-        "--num_epochs", type=int, default=100, help="Number of training epochs."
+        "--num-epochs", type=int, default=10, help="Number of training epochs."
     )
     parser.add_argument(
-        "--lambda_perceptual",
+        "--lambda-perceptual",
         type=float,
         default=0.1,
         help="Weight for the perceptual loss.",
@@ -148,7 +162,7 @@ def main():
     # Dataset and DataLoader
     csv_file = os.path.join(args.data_dir, "train.csv")
     root_dir = os.path.join(args.data_dir)
-    dataset = DeepFakeDataset(csv_file=csv_file, root_dir=root_dir, transform=transform)
+    dataset = DeepFakeDataset(csv_file=csv_file, root_dir=root_dir, transform=transform, fraction=0.01)
     data_loader = DataLoader(
         dataset, batch_size=args.batch_size, shuffle=True, num_workers=4
     )
