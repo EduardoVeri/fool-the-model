@@ -1,8 +1,9 @@
 import torch.nn as nn
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 import os
 from skimage import io, transform
 import pandas as pd
+
 
 class CNN(nn.Module):
     def __init__(self, num_classes=2):
@@ -52,7 +53,7 @@ class CNN(nn.Module):
 
 
 class DeepFakeDataset(Dataset):
-    def __init__(self, csv_file, root_dir, fraction = 1, transform=None):
+    def __init__(self, csv_file, root_dir, fraction=1, transform=None):
         self.data = pd.read_csv(csv_file)
         self.root_dir = root_dir
         self.transform = transform
@@ -71,3 +72,47 @@ class DeepFakeDataset(Dataset):
 
         return image, label
 
+
+def get_dataloaders(path: str, batch_size: int, transform: object, fraction: float = 1):
+    train_dataset = DeepFakeDataset(
+        csv_file=os.path.join(path, "train.csv"),
+        root_dir=path,
+        fraction=fraction,
+        transform=transform,
+    )
+    valid_dataset = DeepFakeDataset(
+        csv_file=os.path.join(path, "valid.csv"),
+        root_dir=path,
+        fraction=fraction,
+        transform=transform,
+    )
+    test_dataset = DeepFakeDataset(
+        csv_file=os.path.join(path, "test.csv"),
+        root_dir=path,
+        fraction=fraction,
+        transform=transform,
+    )
+
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=4,
+        pin_memory=True,
+    )
+    valid_loader = DataLoader(
+        valid_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=4,
+        pin_memory=True,
+    )
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=4,
+        pin_memory=True,
+    )
+
+    return train_loader, valid_loader, test_loader
