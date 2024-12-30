@@ -105,8 +105,11 @@ def train(
             # Get classifier outputs
             outputs = classifier(adv_imgs)
 
+            # Invert the labels for the adversarial loss
+            adv_labels = 1 - labels            
+            
             # Compute losses
-            loss_adv = -adversarial_loss(outputs, labels)
+            loss_adv = adversarial_loss(outputs, adv_labels)
             loss_perceptual = perceptual_loss(adv_imgs, imgs)
             total_loss = loss_adv + lambda_perceptual * loss_perceptual
 
