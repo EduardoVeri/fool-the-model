@@ -14,6 +14,44 @@ import matplotlib.pyplot as plt
 from utils import CNN, DeepFakeDataset  # Adjust the import as necessary
 
 
+def get_args():
+    parser = argparse.ArgumentParser(description="Train an adversarial generator.")
+    parser.add_argument(
+        "--data-dir",
+        type=str,
+        default="../data/140k-real-and-fake-faces/",
+        help="Path to the dataset directory.",
+    )
+    parser.add_argument(
+        "--classifier-path",
+        type=str,
+        required=True,
+        help="Path to the pre-trained classifier checkpoint.",
+    )
+    parser.add_argument(
+        "--save-path",
+        type=str,
+        default="adversarial_generator.pth",
+        help="Path to save the generator model.",
+    )
+    parser.add_argument("--img-size", type=int, default=128, help="Image size.")
+    parser.add_argument("--batch-size", type=int, default=16, help="Batch size.")
+    parser.add_argument("--lr", type=float, default=0.0002, help="Learning rate.")
+    parser.add_argument(
+        "--num-epochs", type=int, default=10, help="Number of training epochs."
+    )
+    parser.add_argument(
+        "--lambda-perceptual",
+        type=float,
+        default=0.1,
+        help="Weight for the perceptual loss.",
+    )
+    parser.add_argument("--seed", type=int, default=42, help="Random seed.")
+    args = parser.parse_args()
+
+    return args
+
+
 def set_seed(seed):
     random.seed(seed)
     torch.manual_seed(seed)
@@ -75,7 +113,7 @@ def train(
             loss_adv_list.append(loss_adv.item())
             loss_perceptual_list.append(loss_perceptual.item())
             total_loss_list.append(total_loss.item())
-            
+
             # Backpropagation
             optimizer.zero_grad()
             total_loss.backward()
@@ -102,47 +140,15 @@ def train(
             f"Victim Accuracy: {victim_acc.item():.4f}"
         )
 
-    plt.plot(loss_adv_list, label='Adversarial Loss')
-    plt.plot(loss_perceptual_list, label='Perceptual Loss')
-    plt.plot(total_loss_list, label='Total Loss')
+    plt.plot(loss_adv_list, label="Adversarial Loss")
+    plt.plot(loss_perceptual_list, label="Perceptual Loss")
+    plt.plot(total_loss_list, label="Total Loss")
     plt.legend()
     plt.show()
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Train an adversarial generator.")
-    parser.add_argument(
-        "--data-dir",
-        type=str,
-        default="../data/140k-real-and-fake-faces/",
-        help="Path to the dataset directory.",
-    )
-    parser.add_argument(
-        "--classifier-path",
-        type=str,
-        required=True,
-        help="Path to the pre-trained classifier checkpoint.",
-    )
-    parser.add_argument(
-        "--save-path",
-        type=str,
-        default="adversarial_generator.pth",
-        help="Path to save the generator model.",
-    )
-    parser.add_argument("--img-size", type=int, default=128, help="Image size.")
-    parser.add_argument("--batch-size", type=int, default=16, help="Batch size.")
-    parser.add_argument("--lr", type=float, default=0.0002, help="Learning rate.")
-    parser.add_argument(
-        "--num-epochs", type=int, default=10, help="Number of training epochs."
-    )
-    parser.add_argument(
-        "--lambda-perceptual",
-        type=float,
-        default=0.1,
-        help="Weight for the perceptual loss.",
-    )
-    parser.add_argument("--seed", type=int, default=42, help="Random seed.")
-    args = parser.parse_args()
+    args = get_args()
 
     # Set random seed
     set_seed(args.seed)
@@ -162,7 +168,9 @@ def main():
     # Dataset and DataLoader
     csv_file = os.path.join(args.data_dir, "train.csv")
     root_dir = os.path.join(args.data_dir)
-    dataset = DeepFakeDataset(csv_file=csv_file, root_dir=root_dir, transform=transform, fraction=0.01)
+    dataset = DeepFakeDataset(
+        csv_file=csv_file, root_dir=root_dir, transform=transform, fraction=0.01
+    )
     data_loader = DataLoader(
         dataset, batch_size=args.batch_size, shuffle=True, num_workers=4
     )
@@ -191,7 +199,7 @@ def main():
         ],
     )
     logging.info("Start training the adversarial generator...")
-    
+
     # Train the generator
     train(
         generator,
