@@ -43,9 +43,17 @@ def get_args():
     )
     parser.add_argument(
         "--lambda-perceptual",
+        "-lper",
         type=float,
         default=0.1,
         help="Weight for the perceptual loss.",
+    )
+    parser.add_argument(
+        "--lambda-pixel",
+        "-lp",
+        type=float,
+        default=0.1,
+        help="Weight for the pixel loss.",
     )
     parser.add_argument("--seed", type=int, default=42, help="Random seed.")
     parser.add_argument(
@@ -96,14 +104,17 @@ def train(
     optimizer,
     adversarial_loss,
     perceptual_loss,
+    pixel_loss,
     num_epochs,
-    lambda_perceptual,
+    l_perceptual,
+    l_pixel,
     device,
 ):
     generator.train()
     classifier.eval()
     loss_adv_list = []
     loss_perceptual_list = []
+    loss_pixel_list = []
     total_loss_list = []
     best_val_acc = float("+inf")
     last_best_epoch = 0
@@ -132,11 +143,15 @@ def train(
 
             # Compute losses
             loss_adv = adversarial_loss(outputs, adv_labels)
-            loss_perceptual = perceptual_loss.forward(adv_imgs, imgs).mean()
-            total_loss = loss_adv + lambda_perceptual * loss_perceptual
+            loss_perceptual = (
+                l_perceptual * perceptual_loss.forward(adv_imgs, imgs).mean()
+            )
+            loss_pixel = l_pixel * pixel_loss(adv_imgs, imgs)
+            total_loss = loss_adv + loss_perceptual + loss_pixel
 
             loss_adv_list.append(loss_adv.item())
             loss_perceptual_list.append(loss_perceptual.item())
+            loss_pixel_list.append(loss_pixel.item())
             total_loss_list.append(total_loss.item())
 
             # Backpropagation
@@ -153,6 +168,7 @@ def train(
                     "Loss": total_loss.item(),
                     "Adv Loss": loss_adv.item(),
                     "Perceptual Loss": loss_perceptual.item(),
+                    "Pixel Loss": loss_pixel.item(),
                     "Victim Acc": victim_acc.item(),
                 }
             )
@@ -176,7 +192,8 @@ def train(
             f"Total Loss: {total_loss.item():.4f}, "
             f"Adv Loss: {loss_adv.item():.4f}, "
             f"Perceptual Loss: {loss_perceptual.item():.4f}, "
-            f"Victim ACC: {victim_acc.item():.4f}, "
+            f"Pixel Loss: {loss_pixel.item():.4f}, "
+            f"Victim Acc: {victim_acc.item():.2f}%, "
             f"Validation ACC: {val_acc:.2f}%"
         )
 
@@ -218,7 +235,7 @@ def main():
 
     # Dataset and DataLoader
     train_data_loader, valid_data_loader, test_data_loader = get_dataloaders(
-        args.data_dir, args.batch_size, transform, 0.01
+        args.data_dir, args.batch_size, transform, args.dataset_fraction
     )
 
     # Initialize models
@@ -232,6 +249,7 @@ def main():
         # Loss functions
         adversarial_loss = nn.CrossEntropyLoss()
         perceptual_loss = lpips.LPIPS(net="vgg").to(device)
+        pixel_loss_fn = nn.MSELoss()
 
         # Optimizer
         optimizer_g = optim.Adam(generator.parameters(), lr=args.lr, weight_decay=1e-5)
@@ -240,16 +258,18 @@ def main():
 
         # Train the generator
         train(
-            generator,
-            classifier,
-            train_data_loader,
-            valid_data_loader,
-            optimizer_g,
-            adversarial_loss,
-            perceptual_loss,
-            args.num_epochs,
-            args.lambda_perceptual,
-            device,
+            generator=generator,
+            classifier=classifier,
+            train_data_loader=train_data_loader,
+            val_data_loader=valid_data_loader,
+            optimizer=optimizer_g,
+            adversarial_loss=adversarial_loss,
+            perceptual_loss=perceptual_loss,
+            pixel_loss=pixel_loss_fn,
+            num_epochs=args.num_epochs,
+            l_perceptual=args.lambda_perceptual,
+            l_pixel=args.lambda_pixel,
+            device=device,
         )
     else:
         generator.load_state_dict(torch.load(args.save_path))
