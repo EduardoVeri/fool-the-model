@@ -49,6 +49,11 @@ def get_args():
     )
     parser.add_argument("--seed", type=int, default=42, help="Random seed.")
     parser.add_argument("--dataset-fraction", type=float, default=1.0, help="Dataset fraction.")
+    parser.add_argument(
+        "--train",
+        action="store_true",
+        help="Train the generator. If not set, the generator will be loaded from the save path.",
+    )
     args = parser.parse_args()
 
     return args
@@ -208,37 +213,40 @@ def main():
 
     generator = MidTermGenerator(img_channels=3).to(device)
 
-    # Loss functions
-    adversarial_loss = nn.CrossEntropyLoss()
-    perceptual_loss = lpips.LPIPS(net="vgg").to(device)
+    if args.train:
+        # Loss functions
+        adversarial_loss = nn.CrossEntropyLoss()
+        perceptual_loss = lpips.LPIPS(net="vgg").to(device)
 
-    # Optimizer
-    optimizer_g = optim.Adam(generator.parameters(), lr=args.lr, weight_decay=1e-5)
+        # Optimizer
+        optimizer_g = optim.Adam(generator.parameters(), lr=args.lr, weight_decay=1e-5)
 
-    # Configure logging in a file
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        handlers=[
-            logging.FileHandler("adversarial_generator.log"),
-            logging.StreamHandler(),
-        ],
-    )
-    logging.info("Start training the adversarial generator...")
+        # Configure logging in a file
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s [%(levelname)s] %(message)s",
+            handlers=[
+                logging.FileHandler("adversarial_generator.log"),
+                logging.StreamHandler(),
+            ],
+        )
+        logging.info("Start training the adversarial generator...")
 
-    # Train the generator
-    train(
-        generator,
-        classifier,
-        train_data_loader,
-        valid_data_loader,
-        optimizer_g,
-        adversarial_loss,
-        perceptual_loss,
-        args.num_epochs,
-        args.lambda_perceptual,
-        device,
-    )
+        # Train the generator
+        train(
+            generator,
+            classifier,
+            train_data_loader,
+            valid_data_loader,
+            optimizer_g,
+            adversarial_loss,
+            perceptual_loss,
+            args.num_epochs,
+            args.lambda_perceptual,
+            device,
+        )
+    else:
+        generator.load_state_dict(torch.load(args.save_path))
 
     # Check Accuracy in the test set after training
     test_acc = evaluate(generator, classifier, test_data_loader, device)
