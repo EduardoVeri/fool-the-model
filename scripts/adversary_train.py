@@ -48,6 +48,7 @@ def get_args():
         help="Weight for the perceptual loss.",
     )
     parser.add_argument("--seed", type=int, default=42, help="Random seed.")
+    parser.add_argument("--dataset-fraction", type=float, default=1.0, help="Dataset fraction.")
     args = parser.parse_args()
 
     return args
@@ -114,11 +115,11 @@ def train(
     loss_adv_list = []
     loss_perceptual_list = []
     total_loss_list = []
-    best_val_acc = 0.0
+    best_val_acc = float("+inf")
     last_best_epoch = 0
     for epoch in range(num_epochs):
         # Early stopping
-        if epoch - last_best_epoch >= 5:
+        if last_best_epoch >= 5:
             logging.info("Early stopping after 5 epochs with no improvement.")
             break
         
@@ -171,9 +172,10 @@ def train(
         logging.info(f"Validation Accuracy: {val_acc:.2f}%")
         
         # Save the model if the validation accuracy is improved
-        if val_acc > best_val_acc:
+        last_best_epoch += 1
+        if val_acc < best_val_acc:
             best_val_acc = val_acc
-            last_best_epoch = epoch
+            last_best_epoch = 0
             torch.save(generator.state_dict(), "adversarial_generator.pth")
             logging.info(f"New best model saved with validation accuracy: {val_acc:.2f}%")
         
@@ -182,10 +184,10 @@ def train(
             f"Total Loss: {total_loss.item():.4f}, "
             f"Adv Loss: {loss_adv.item():.4f}, "
             f"Perceptual Loss: {loss_perceptual.item():.4f}, "
-            f"Victim Accuracy: {victim_acc.item():.4f}",
-            f"Validation Accuracy: {val_acc:.2f}%",
+            f"Victim ACC: {victim_acc.item():.4f}, "
+            f"Validation ACC: {val_acc:.2f}%"
         )    
-
+        
     plt.plot(loss_adv_list, label="Adversarial Loss")
     plt.plot(loss_perceptual_list, label="Perceptual Loss")
     plt.plot(total_loss_list, label="Total Loss")
