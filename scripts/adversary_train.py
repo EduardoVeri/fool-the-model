@@ -12,7 +12,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import lpips
 
-from utils import CNN, DeepFakeDataset, get_dataloaders
+from utils import CNN, DeepFakeDataset, get_dataloaders, MidTermGenerator
 
 
 def get_args():
@@ -79,24 +79,6 @@ def evaluate(generator, classifier, data_loader, device):
             correct += (outputs.argmax(1) == labels).sum().item()
 
     return 100 * correct / total
-
-class Generator(nn.Module):
-    def __init__(self, img_channels):
-        super(Generator, self).__init__()
-        self.model = nn.Sequential(
-            nn.Conv2d(img_channels, 64, kernel_size=3, padding=1),
-            nn.LeakyReLU(0.2, inplace=True),
-            # nn.Dropout(0.3),
-            nn.Conv2d(64, img_channels, kernel_size=3, padding=1),
-            # nn.Tanh(),
-        )
-
-    def forward(self, x):
-        perturbation = self.model(x)
-        adv_x = x + perturbation
-        adv_x = torch.clamp(adv_x, -1, 1)
-        return adv_x
-
 
 def train(
     generator,
@@ -224,7 +206,7 @@ def main():
     classifier.load_state_dict(torch.load(args.classifier_path, weights_only=True))
     classifier.eval()
 
-    generator = Generator(img_channels=3).to(device)
+    generator = MidTermGenerator(img_channels=3).to(device)
 
     # Loss functions
     adversarial_loss = nn.CrossEntropyLoss()
