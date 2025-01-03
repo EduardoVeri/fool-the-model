@@ -110,6 +110,8 @@ def train(
     l_pixel,
     device,
 ):
+    EPSILON = 0.03
+
     generator.train()
     classifier.eval()
     loss_adv_list = []
@@ -118,6 +120,7 @@ def train(
     total_loss_list = []
     best_val_acc = float("+inf")
     last_best_epoch = 0
+
     for epoch in range(num_epochs):
         # Early stopping
         if last_best_epoch >= 5:
@@ -134,27 +137,32 @@ def train(
             # Generate adversarial images
             adv_imgs = generator(imgs)
 
+            # Constrain the perturbation in L infinity norm
+            delta = adv_imgs - imgs
+            delta = torch.clamp(delta, -EPSILON, EPSILON)
+            adv_imgs = (imgs + delta).clamp(-1, 1)
+
             # Get classifier outputs
-            adv_imgs_norm = (adv_imgs + 1) / 2  # Normalize to [0, 1]
+            adv_imgs_norm = (adv_imgs + 1) / 2.0  # map [-1,1] -> [0,1]
             outputs = classifier(adv_imgs_norm)
 
             # Invert the labels for the adversarial loss
-            adv_labels = 1 - labels  # It is a binary classification problem
+            adv_labels = 1 - labels  # binary classification
 
             # Compute losses
-            loss_adv = adversarial_loss(outputs, adv_labels)
-            loss_perceptual = (
-                l_perceptual * perceptual_loss.forward(adv_imgs, imgs).mean()
-            )
-            loss_pixel = l_pixel * pixel_loss(adv_imgs, imgs)
-            total_loss = loss_adv + loss_perceptual + loss_pixel
+            loss_adv = adversarial_loss(outputs, adv_labels.long())
+            loss_perceptual = l_perceptual * perceptual_loss(adv_imgs, imgs).mean()
+            # loss_px = l_pixel * pixel_loss(adv_imgs, imgs)
 
+            total_loss = loss_adv + loss_perceptual  # + loss_px
+
+            # Logging values
             loss_adv_list.append(loss_adv.item())
             loss_perceptual_list.append(loss_perceptual.item())
-            loss_pixel_list.append(loss_pixel.item())
+            # loss_pixel_list.append(loss_px.item())
             total_loss_list.append(total_loss.item())
 
-            # Backpropagation
+            # Backprop + Step
             optimizer.zero_grad()
             total_loss.backward()
             optimizer.step()
@@ -168,16 +176,15 @@ def train(
                     "Loss": total_loss.item(),
                     "Adv Loss": loss_adv.item(),
                     "Perceptual Loss": loss_perceptual.item(),
-                    "Pixel Loss": loss_pixel.item(),
                     "Victim Acc": victim_acc.item(),
                 }
             )
 
-        # Evaluate the model
+        # Evaluate on validation
         val_acc = evaluate(generator, classifier, val_data_loader, device)
         logging.info(f"Validation Accuracy: {val_acc:.2f}%")
 
-        # Save the model if the validation accuracy is improved
+        # Save model if improved
         last_best_epoch += 1
         if val_acc < best_val_acc:
             best_val_acc = val_acc
@@ -192,11 +199,11 @@ def train(
             f"Total Loss: {total_loss.item():.4f}, "
             f"Adv Loss: {loss_adv.item():.4f}, "
             f"Perceptual Loss: {loss_perceptual.item():.4f}, "
-            f"Pixel Loss: {loss_pixel.item():.4f}, "
-            f"Victim Acc: {victim_acc.item():.2f}%, "
+            f"Victim Acc: {victim_acc.item():.2f}, "
             f"Validation ACC: {val_acc:.2f}%"
         )
 
+    # Plot losses
     plt.plot(loss_adv_list, label="Adversarial Loss")
     plt.plot(loss_perceptual_list, label="Perceptual Loss")
     plt.plot(total_loss_list, label="Total Loss")
