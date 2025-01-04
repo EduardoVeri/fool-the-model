@@ -9,7 +9,9 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from tqdm import tqdm
-from utils import CNN, DeepFakeDataset
+
+from dataloader.dataloader import DeepFakeDataset
+from arch.deepfake_cnn import CNN
 
 
 def get_args():
