@@ -1,18 +1,19 @@
 import argparse
 import logging
-import os
 import random
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import transforms
-from torch.utils.data import DataLoader
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import lpips
 
-from utils import CNN, DeepFakeDataset, get_dataloaders, MidTermGenerator
+from dataloader.dataloader import get_dataloaders
+
+from arch.deepfake_arch import CNN
+from arch.adversarial_generator import MidTermGenerator
 
 
 def get_args():
