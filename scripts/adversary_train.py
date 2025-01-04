@@ -110,7 +110,7 @@ def train(
     l_pixel,
     device,
 ):
-    EPSILON = 0.03
+    EPSILON = 0.1
 
     generator.train()
     classifier.eval()
@@ -123,10 +123,15 @@ def train(
 
     for epoch in range(num_epochs):
         # Early stopping
-        if last_best_epoch >= 5:
+        if last_best_epoch >= 25:
             logging.info("Early stopping after 5 epochs with no improvement.")
             break
-
+        
+        epoch_adv_list = []
+        epoch_perceptual_list = []
+        epoch_total_list = []
+        epoch_victim_acc_list = []
+        
         loop = tqdm(
             train_data_loader, desc=f"Epoch [{epoch+1}/{num_epochs}]", leave=False
         )
@@ -157,10 +162,10 @@ def train(
             total_loss = loss_adv + loss_perceptual  # + loss_px
 
             # Logging values
-            loss_adv_list.append(loss_adv.item())
-            loss_perceptual_list.append(loss_perceptual.item())
+            epoch_adv_list.append(loss_adv.item())
+            epoch_perceptual_list.append(loss_perceptual.item())
             # loss_pixel_list.append(loss_px.item())
-            total_loss_list.append(total_loss.item())
+            epoch_total_list.append(total_loss.item())
 
             # Backprop + Step
             optimizer.zero_grad()
@@ -169,6 +174,7 @@ def train(
 
             # Compute victim accuracy
             victim_acc = (outputs.argmax(1) == labels).float().mean()
+            epoch_victim_acc_list.append(victim_acc.item())
 
             # Update progress bar
             loop.set_postfix(
@@ -194,13 +200,22 @@ def train(
                 f"New best model saved with validation accuracy: {val_acc:.2f}%"
             )
 
+        mean_loss_adv = sum(epoch_adv_list) / len(epoch_adv_list)
+        mean_perceptual_loss = sum(epoch_perceptual_list) / len(epoch_perceptual_list)
+        mean_loss_total = sum(epoch_total_list) / len(epoch_total_list)
+        mean_victim_acc = sum(epoch_victim_acc_list) / len(epoch_victim_acc_list)
+        
+        loss_adv_list.append(mean_loss_adv)
+        loss_perceptual_list.append(mean_perceptual_loss)
+        total_loss_list.append(mean_loss_total)
+        
         logging.info(
             f"Epoch [{epoch+1}/{num_epochs}] - "
-            f"Total Loss: {total_loss.item():.4f}, "
-            f"Adv Loss: {loss_adv.item():.4f}, "
-            f"Perceptual Loss: {loss_perceptual.item():.4f}, "
-            f"Victim Acc: {victim_acc.item():.2f}, "
-            f"Validation ACC: {val_acc:.2f}%"
+            f"Total Loss: {mean_loss_total:.4f}, "
+            f"Adv Loss: {mean_loss_adv:.4f}, "
+            f"Perceptual Loss: {mean_perceptual_loss:.4f}, "
+            f"Victim Acc: {mean_victim_acc:.2f}, "
+            f"Validation Acc: {val_acc:.2f}%"
         )
 
     # Plot losses
