@@ -203,7 +203,7 @@ def train(
         mean_loss_adv = sum(epoch_adv_list) / len(epoch_adv_list)
         mean_perceptual_loss = sum(epoch_perceptual_list) / len(epoch_perceptual_list)
         mean_loss_total = sum(epoch_total_list) / len(epoch_total_list)
-        mean_victim_acc = sum(epoch_victim_acc_list) / len(epoch_victim_acc_list)
+        mean_victim_acc = (sum(epoch_victim_acc_list) / len(epoch_victim_acc_list)) * 100
         
         loss_adv_list.append(mean_loss_adv)
         loss_perceptual_list.append(mean_perceptual_loss)
