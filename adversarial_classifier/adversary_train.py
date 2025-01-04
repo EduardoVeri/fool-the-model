@@ -12,7 +12,7 @@ import lpips
 
 from dataloader.dataloader import get_dataloaders
 
-from arch.deepfake_arch import CNN
+from adversarial_classifier.arch.deepfake_cnn import CNN
 from arch.adversarial_generator import MidTermGenerator
 
 
