@@ -18,6 +18,8 @@ unzip ./140k-real-and-fake-faces.zip -d data
 rm ./140k-real-and-fake-faces.zip
 
 # Remove unexpected 
-mv data/real_vs_fake/real-vs-fake/ data/
+mv data/real_vs_fake/real-vs-fake/test data
+mv data/real_vs_fake/real-vs-fake/valid data
+mv data/real_vs_fake/real-vs-fake/train data
 rm -r data/real_vs_fake
 
