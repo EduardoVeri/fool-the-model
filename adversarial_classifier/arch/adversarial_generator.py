@@ -150,3 +150,11 @@ class MidTermGenerator(nn.Module):
         adv_x = x + perturbation
         adv_x = torch.clamp(adv_x, -1, 1)
         return adv_x
+
+    def clamp_perturbation(self, original, adversarial, clamp):
+        """
+        Given a perturbation, clamp it to the range [-clamp, clamp]
+        """
+        delta = adversarial - original
+        perturbation = torch.clamp(delta, -clamp, clamp)
+        return (original + perturbation).clamp(-1, 1)
