@@ -103,9 +103,11 @@ class MidTermGenerator(nn.Module):
       Upsample (32->64->128)
     """
 
-    def __init__(self, img_channels=3, base_channels=32):
+    def __init__(self, img_channels=3, base_channels=32, epsilon=0.1):
         super().__init__()
 
+        self.epsilon = epsilon
+        
         # -----------------------
         #     Encoder (down)
         # -----------------------
@@ -147,14 +149,10 @@ class MidTermGenerator(nn.Module):
         # If you want a narrower range, you can add a .tanh() here
         # but often it's better to clamp after you add to x.
 
+        # Add perturbation to input image
+        delta = perturbation - x 
+        perturbation = torch.clamp(delta, -self.epsilon, self.epsilon) 
         adv_x = x + perturbation
         adv_x = torch.clamp(adv_x, -1, 1)
+        
         return adv_x
-
-    def clamp_perturbation(self, original, adversarial, clamp):
-        """
-        Given a perturbation, clamp it to the range [-clamp, clamp]
-        """
-        delta = adversarial - original
-        perturbation = torch.clamp(delta, -clamp, clamp)
-        return (original + perturbation).clamp(-1, 1)

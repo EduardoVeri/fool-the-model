@@ -1,9 +1,11 @@
 import torch
 import matplotlib.pyplot as plt
 from torchvision import transforms
+from arch.adversarial_generator import MidTermGenerator
 
 
-def visualize_adversarial_examples(device, test_data_loader, generator, EPSILON):
+def visualize_adversarial_examples(device, test_data_loader, generator:MidTermGenerator, EPSILON):
+    generator.eval()
     fig, ax = plt.subplots(3, 5, figsize=(15, 8))
     inv_transform = transforms.Compose(
         [transforms.Normalize(mean=[-1, -1, -1], std=[2, 2, 2])]
@@ -24,7 +26,7 @@ def visualize_adversarial_examples(device, test_data_loader, generator, EPSILON)
 
         img = img.to(device)
         with torch.no_grad():
-            adv_img = generator.clamp_perturbation(img, generator(img), EPSILON)
+            adv_img = generator(img)
 
         # Move tensors back to CPU and undo the [-1,1] normalization for display
         orig_img_vis = inv_transform(img)[0].detach().cpu()
