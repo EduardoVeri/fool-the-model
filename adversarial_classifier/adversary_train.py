@@ -273,9 +273,6 @@ def train(
 def main():
     args = get_args()
 
-    if not path.exists(args.save_path):
-        os.makedirs(args.save_path)
-
     epsilon = args.epsilon
     
     # Configure logging in a file
@@ -328,22 +325,27 @@ def main():
         logging.info("Start training the adversarial generator...")
 
         # Train the generator
-        train(
-            generator=generator,
-            classifier=classifier,
-            train_data_loader=train_data_loader,
-            val_data_loader=valid_data_loader,
-            optimizer=optimizer_g,
-            adversarial_loss=adversarial_loss,
-            perceptual_loss=perceptual_loss,
-            pixel_loss=pixel_loss_fn,
-            num_epochs=args.num_epochs,
-            l_perceptual=args.lambda_perceptual,
-            l_pixel=args.lambda_pixel,
-            device=device,
-            output_path=args.save_path,
-            epsilon=epsilon,
-        )
+        try:
+            train(
+                generator=generator,
+                classifier=classifier,
+                train_data_loader=train_data_loader,
+                val_data_loader=valid_data_loader,
+                optimizer=optimizer_g,
+                adversarial_loss=adversarial_loss,
+                perceptual_loss=perceptual_loss,
+                pixel_loss=pixel_loss_fn,
+                num_epochs=args.num_epochs,
+                l_perceptual=args.lambda_perceptual,
+                l_pixel=args.lambda_pixel,
+                device=device,
+                output_path=args.save_path,
+                epsilon=epsilon,
+            )
+        except KeyboardInterrupt:
+            logging.info("Training interrupted. Saving model...")
+            torch.save(generator.state_dict(), "adversarial_generator_interrupted.pth")
+        
     else:
         generator.load_state_dict(torch.load(args.save_path))
 
