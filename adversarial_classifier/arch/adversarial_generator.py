@@ -150,8 +150,7 @@ class MidTermGenerator(nn.Module):
         # but often it's better to clamp after you add to x.
 
         # Add perturbation to input image
-        delta = perturbation - x 
-        perturbation = torch.clamp(delta, -self.epsilon, self.epsilon) 
+        perturbation = torch.clamp(perturbation, -self.epsilon, self.epsilon) 
         adv_x = x + perturbation
         adv_x = torch.clamp(adv_x, -1, 1)
         

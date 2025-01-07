@@ -190,7 +190,7 @@ def train(
             outputs = classifier(adv_imgs_norm)
 
             # Invert the labels for the adversarial loss
-            adv_labels = torch.ones_like(labels)
+            adv_labels = 1 - labels
 
             # Compute losses
             loss_adv = adversarial_loss(outputs, adv_labels.long())
@@ -306,6 +306,9 @@ def main():
     classifier = CNN().to(device)
     classifier.load_state_dict(torch.load(args.classifier_path, weights_only=True))
     classifier.eval()
+    
+    for param in classifier.parameters():
+        param.requires_grad = False
 
     generator = MidTermGenerator(img_channels=3, epsilon=epsilon).to(device)
 
