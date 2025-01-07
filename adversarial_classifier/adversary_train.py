@@ -155,12 +155,13 @@ def train(
     output_path="adversarial_generator.pth",
 ):
 
+    if os.path.exists(output_path):
+        logging.info(f"Loading existing model in output path {output_path}")
+        generator.load_state_dict(torch.load(output_path))
+
     generator.train()
     classifier.eval()
-    loss_adv_list = []
-    loss_perceptual_list = []
-    loss_pixel_list = []
-    total_loss_list = []
+
     best_val_acc = float("+inf")
     last_best_epoch = 0
 
@@ -190,19 +191,21 @@ def train(
             outputs = classifier(adv_imgs_norm)
 
             # Invert the labels for the adversarial loss
-            adv_labels = 1 - labels
+            adv_labels = torch.ones_like(labels)
 
             # Compute losses
             loss_adv = adversarial_loss(outputs, adv_labels.long())
-            loss_perceptual = l_perceptual * perceptual_loss(adv_imgs, imgs).mean()
-            # loss_px = l_pixel * pixel_loss(adv_imgs, imgs)
-
-            total_loss = loss_adv + loss_perceptual  # + loss_px
+            loss_perceptual_val = torch.tensor(0.0, device=device)
+            if l_perceptual > 0:
+                loss_perceptual_val = (
+                    l_perceptual * perceptual_loss(adv_imgs, imgs).mean()
+                )
+            total_loss = loss_adv + loss_perceptual_val
 
             # Logging values
             epoch_adv_list.append(loss_adv.item())
-            epoch_perceptual_list.append(loss_perceptual.item())
-            # loss_pixel_list.append(loss_px.item())
+            if l_perceptual > 0:
+                epoch_perceptual_list.append(loss_perceptual_val.item())
             epoch_total_list.append(total_loss.item())
 
             # Backprop + Step
@@ -219,8 +222,8 @@ def train(
                 {
                     "Loss": total_loss.item(),
                     "Adv Loss": loss_adv.item(),
-                    "Perceptual Loss": loss_perceptual.item(),
-                    "Victim Acc": victim_acc.item(),
+                    "Perceptual Loss": loss_perceptual_val.item(),
+                    "Victim Acc": victim_acc.item() * 100,
                 }
             )
 
@@ -239,31 +242,24 @@ def train(
             )
 
         mean_loss_adv = sum(epoch_adv_list) / len(epoch_adv_list)
-        mean_perceptual_loss = sum(epoch_perceptual_list) / len(epoch_perceptual_list)
+        mean_perceptual_loss = (
+            0
+            if len(epoch_perceptual_list) == 0
+            else sum(epoch_perceptual_list) / len(epoch_perceptual_list)
+        )
         mean_loss_total = sum(epoch_total_list) / len(epoch_total_list)
         mean_victim_acc = (
             sum(epoch_victim_acc_list) / len(epoch_victim_acc_list)
         ) * 100
-
-        loss_adv_list.append(mean_loss_adv)
-        loss_perceptual_list.append(mean_perceptual_loss)
-        total_loss_list.append(mean_loss_total)
 
         logging.info(
             f"Epoch [{epoch+1}/{num_epochs}] - "
             f"Total Loss: {mean_loss_total:.4f}, "
             f"Adv Loss: {mean_loss_adv:.4f}, "
             f"Perceptual Loss: {mean_perceptual_loss:.4f}, "
-            f"Victim Acc: {mean_victim_acc:.2f}, "
+            f"Victim Acc: {mean_victim_acc:.2f}%, "
             f"Validation Acc: {val_acc:.2f}%"
         )
-
-    # Plot losses
-    plt.plot(loss_adv_list, label="Adversarial Loss")
-    plt.plot(loss_perceptual_list, label="Perceptual Loss")
-    plt.plot(total_loss_list, label="Total Loss")
-    plt.legend()
-    plt.show()
 
 
 def main():
@@ -306,7 +302,7 @@ def main():
     classifier = CNN().to(device)
     classifier.load_state_dict(torch.load(args.classifier_path, weights_only=True))
     classifier.eval()
-    
+
     for param in classifier.parameters():
         param.requires_grad = False
 
