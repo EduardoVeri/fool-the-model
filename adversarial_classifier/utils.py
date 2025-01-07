@@ -4,7 +4,7 @@ from torchvision import transforms
 from arch.adversarial_generator import MidTermGenerator
 
 
-def visualize_adversarial_examples(device, test_data_loader, generator:MidTermGenerator, EPSILON):
+def visualize_adversarial_examples(device, test_data_loader, generator:MidTermGenerator):
     generator.eval()
     fig, ax = plt.subplots(3, 5, figsize=(15, 8))
     inv_transform = transforms.Compose(
