@@ -55,14 +55,14 @@ def get_dataloaders(path: str, batch_size: int, transform: object, fraction: flo
     valid_loader = DataLoader(
         valid_dataset,
         batch_size=batch_size,
-        shuffle=False,
+        shuffle=True,
         num_workers=4,
         pin_memory=True,
     )
     test_loader = DataLoader(
         test_dataset,
         batch_size=batch_size,
-        shuffle=False,
+        shuffle=True,
         num_workers=4,
         pin_memory=True,
     )
