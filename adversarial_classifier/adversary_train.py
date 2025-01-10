@@ -27,13 +27,21 @@ def get_args():
         "--config-path",
         "-c",
         type=str,
-        required=True,
+        default="./configs/adv_config.yaml",
         help="Path to the configuration file.",
+    )
+    parser.add_argument(
+        "--exp-name",
+        "-e",
+        type=str,
+        required=True,
+        help="Name of the experiment to use inside the configuration file.",
     )
     parser.add_argument(
         "--train",
         action="store_true",
-        help="Train the generator. If not set, the generator will be loaded from the save path.",
+        help="Train the generator. If not set, the generator will be "
+        + "loaded from the save path and run on the test set.",
     )
     args = parser.parse_args()
 
@@ -225,21 +233,22 @@ def main():
     # Get configs from yaml file
     with open(args.config_path, "r") as file:
         config = yaml.safe_load(file)
+
+    exp_config = config[args.exp_name]
     
-    img_size = config["img_size"]
-    batch_size = config["batch_size"]
-    dataset_fraction = config["dataset_fraction"]
-    num_epochs = config["num_epochs"]
-    lr = config["lr"]
-    lambda_perceptual = config["lambda_perceptual"]
-    lambda_pixel = config["lambda_pixel"]
-    epsilon = config["epsilon"]
-    seed = config["seed"]
-    data_dir = config["data_dir"]
-    classifier_path = config["classifier_path"]
-    save_path = config["save_path"]
-    
-    
+    img_size = exp_config["img-size"]
+    batch_size = exp_config["batch-size"]
+    dataset_fraction = exp_config["dataset-fraction"]
+    num_epochs = exp_config["epochs"]
+    lr = exp_config["lr"]
+    lambda_perceptual = exp_config["lper"]
+    lambda_pixel = exp_config.get("lpixel", 0)
+    epsilon = exp_config["epsilon"]
+    seed = exp_config["seed"]
+    data_dir = exp_config["data-dir"]
+    classifier_path = exp_config["classifier-path"]
+    save_path = exp_config["save-path"]
+
     # Configure logging in a file
     logging.basicConfig(
         level=logging.INFO,
@@ -316,7 +325,7 @@ def main():
     else:
         logging.info("Loading existing model...")
         logging.info("If you want to train the generator, use the --train flag.")
-        
+
         generator.load_state_dict(torch.load(save_path))
 
     # Check Accuracy in the test set after training
