@@ -6,3 +6,4 @@ ipykernel
 torchsummary
 tqdm
 lpips
+pyyaml

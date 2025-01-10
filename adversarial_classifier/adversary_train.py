@@ -3,6 +3,7 @@ import logging
 import random
 from os import path
 import os
+import yaml
 
 import torch
 import torch.nn as nn
@@ -23,60 +24,16 @@ from utils import visualize_adversarial_examples
 def get_args():
     parser = argparse.ArgumentParser(description="Train an adversarial generator.")
     parser.add_argument(
-        "--data-dir",
-        "-d",
-        type=str,
-        default="../data",
-        help="Path to the dataset directory.",
-    )
-    parser.add_argument(
-        "--classifier-path",
+        "--config-path",
+        "-c",
         type=str,
         required=True,
-        help="Path to the pre-trained classifier checkpoint.",
-    )
-    parser.add_argument(
-        "--save-path",
-        "-s",
-        type=str,
-        default="adversarial_generator.pth",
-        help="Path to save the generator model.",
-    )
-    parser.add_argument("--img-size", type=int, default=128, help="Image size.")
-    parser.add_argument("--batch-size", type=int, default=16, help="Batch size.")
-    parser.add_argument("--lr", type=float, default=0.0002, help="Learning rate.")
-    parser.add_argument(
-        "--num-epochs", type=int, default=10, help="Number of training epochs."
-    )
-    parser.add_argument(
-        "--lambda-perceptual",
-        "-lper",
-        type=float,
-        default=0.1,
-        help="Weight for the perceptual loss.",
-    )
-    parser.add_argument(
-        "--lambda-pixel",
-        "-lp",
-        type=float,
-        default=0.1,
-        help="Weight for the pixel loss.",
-    )
-    parser.add_argument("--seed", type=int, default=42, help="Random seed.")
-    parser.add_argument(
-        "--dataset-fraction", type=float, default=1.0, help="Dataset fraction."
+        help="Path to the configuration file.",
     )
     parser.add_argument(
         "--train",
         action="store_true",
         help="Train the generator. If not set, the generator will be loaded from the save path.",
-    )
-    parser.add_argument(
-        "--epsilon",
-        "-e",
-        type=float,
-        default=0.1,
-        help="Maximum perturbation allowed in the L infinity norm.",
     )
     args = parser.parse_args()
 
@@ -265,6 +222,24 @@ def train(
 def main():
     args = get_args()
 
+    # Get configs from yaml file
+    with open(args.config_path, "r") as file:
+        config = yaml.safe_load(file)
+    
+    img_size = config["img_size"]
+    batch_size = config["batch_size"]
+    dataset_fraction = config["dataset_fraction"]
+    num_epochs = config["num_epochs"]
+    lr = config["lr"]
+    lambda_perceptual = config["lambda_perceptual"]
+    lambda_pixel = config["lambda_pixel"]
+    epsilon = config["epsilon"]
+    seed = config["seed"]
+    data_dir = config["data_dir"]
+    classifier_path = config["classifier_path"]
+    save_path = config["save_path"]
+    
+    
     # Configure logging in a file
     logging.basicConfig(
         level=logging.INFO,
@@ -276,7 +251,7 @@ def main():
     )
 
     # Set random seed
-    set_seed(args.seed)
+    set_seed(seed)
 
     # Device configuration
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -285,7 +260,7 @@ def main():
     transform = transforms.Compose(
         [
             transforms.ToPILImage(),
-            transforms.Resize((args.img_size, args.img_size)),
+            transforms.Resize((img_size, img_size)),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
         ]
@@ -293,18 +268,18 @@ def main():
 
     # Dataset and DataLoader
     train_data_loader, valid_data_loader, test_data_loader = get_dataloaders(
-        args.data_dir, args.batch_size, transform, args.dataset_fraction
+        data_dir, batch_size, transform, dataset_fraction
     )
 
     # Initialize models
     classifier = CNN().to(device)
-    classifier.load_state_dict(torch.load(args.classifier_path, weights_only=True))
+    classifier.load_state_dict(torch.load(classifier_path, weights_only=True))
     classifier.eval()
 
     for param in classifier.parameters():
         param.requires_grad = False
 
-    generator = MidTermGenerator(img_channels=3, epsilon=args.epsilon).to(device)
+    generator = MidTermGenerator(img_channels=3, epsilon=epsilon).to(device)
 
     if args.train:
         # Loss functions
@@ -313,7 +288,7 @@ def main():
         pixel_loss_fn = nn.MSELoss()
 
         # Optimizer
-        optimizer_g = optim.Adam(generator.parameters(), lr=args.lr, weight_decay=1e-5)
+        optimizer_g = optim.Adam(generator.parameters(), lr=lr, weight_decay=1e-5)
 
         logging.info("Start training the adversarial generator...")
 
@@ -328,18 +303,21 @@ def main():
                 adversarial_loss=adversarial_loss,
                 perceptual_loss=perceptual_loss,
                 pixel_loss=pixel_loss_fn,
-                num_epochs=args.num_epochs,
-                l_perceptual=args.lambda_perceptual,
-                l_pixel=args.lambda_pixel,
+                num_epochs=num_epochs,
+                l_perceptual=lambda_perceptual,
+                l_pixel=lambda_pixel,
                 device=device,
-                output_path=args.save_path,
+                output_path=save_path,
             )
         except KeyboardInterrupt:
             logging.info("Training interrupted. Saving model...")
             torch.save(generator.state_dict(), "adversarial_generator_interrupted.pth")
 
     else:
-        generator.load_state_dict(torch.load(args.save_path))
+        logging.info("Loading existing model...")
+        logging.info("If you want to train the generator, use the --train flag.")
+        
+        generator.load_state_dict(torch.load(save_path))
 
     # Check Accuracy in the test set after training
     test_acc = evaluate(generator, classifier, test_data_loader, device, True)
