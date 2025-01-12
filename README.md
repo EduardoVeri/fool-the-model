@@ -1,34 +1,49 @@
 # Fool-the-Model
 
-This repository contains a framework for training and evaluating adversarial attacks against DeepFake classification models. It includes:
+A framework for training and evaluating adversarial attacks against DeepFake classification models. This project provides:
 
-- A CNN for DeepFake detection.
-- An adversarial generator to craft subtle perturbations.
-- Scripts to train both the detector and the adversarial generator.
+- CNN for DeepFake detection
+- Adversarial Generator to craft subtle perturbations
+- Training scripts for both the detector and the adversarial generator
 
 ## Requirements
 
-To run the project you will need:
+1. Python 3.12 or higher
+   Ensure you have Python >= 3.12 installed. You can use system Python or a conda/mamba environment.
 
-1. Python 3.12 or higher installed in your system or conda/mamba environment.
+2. (Optional) Micromamba
+   We recommend using micromamba (https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html) for faster environment management.
 
-2. (Optional) We recommend installing the Micromamba package manager. It is a faster and more efficient alternative to conda. Follow the steps in the [official site](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html) to install it.
-
-3. Install requirements:  
+3. Install Dependencies
    ```bash
    pip install -r requirements.txt
    ```
 
 ## Usage
 
-1. Ensure you have a properly trained CNN by running:
+1. Train the CNN classifier
    ```bash
    python deepfakes_train.py
    ```
-2. Train the adversarial generator (or use the pre-trained one):
+   This trains a DeepFake detection CNN on your dataset.
+
+2. Train the adversarial generator
    ```bash
    python adversary_train.py --train -e <experiment-name>
    ```
-3. Adjust configurations and hyperparameters in the YAML config if needed.
+   This script generates perturbations that attempt to fool the classifier.
 
-For more details, explore the scripts in this repository.
+3. Adjust Hyperparameters
+   Hyperparameters and configurations (e.g., learning rate, batch size) can be tweaked in the relevant scripts or YAML config files to suit your needs.
+
+Visual Results
+
+Below is an example of an original (real) image versus its adversarial counterpart produced by the generator. The adversarial image looks very similar to the original but is crafted to cause the DeepFake classifier to misclassify.
+
+| Original                  | Adversarial                     |
+|---------------------------|---------------------------------|
+| ![Original Image](docs/original_example.jpg) | ![Adversarial Image](docs/adv_example.jpg) |
+
+For a more extensive visualization, you can run a script (e.g., visualize_adversarial_examples.py) or integrate the images directly into notebooks or reports.
+
+If you have any questions or issues, feel free to open an issue or submit a pull request. We welcome contributions to improve and expand this framework!
