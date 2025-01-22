@@ -7,3 +7,4 @@ torchsummary
 tqdm
 lpips
 pyyaml
+opencv-python
