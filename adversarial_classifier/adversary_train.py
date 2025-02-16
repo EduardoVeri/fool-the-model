@@ -155,8 +155,6 @@ def train(
 
             # Get classifier outputs
             adv_imgs_norm = (adv_imgs + 1) / 2.0  # map [-1,1] -> [0,1]
-            random = 
-            
             
             outputs = classifier(adv_imgs_norm)
 
