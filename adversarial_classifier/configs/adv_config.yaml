@@ -8,6 +8,6 @@ train-adversary-all-real:
   epochs: 100
   lper: 0 # Deactivate
   seed: 42
-  dataset-fraction: 0.004
+  dataset-fraction: 0.02
   epsilon: 0.01
   

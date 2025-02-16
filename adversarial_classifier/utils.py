@@ -6,6 +6,44 @@ import os
 from os import path
 from tqdm import tqdm
 
+def visualize_one_adversarial_example(device, image, generator: MidTermGenerator):
+    generator.eval()
+    inv_transform = transforms.Compose(
+        [transforms.Normalize(mean=[-1, -1, -1], std=[2, 2, 2])]
+    )
+    image = image.unsqueeze(0)
+    img = image.to(device)
+    with torch.no_grad():
+        adv_img = generator(img)
+
+    orig_img_vis = inv_transform(img)[0].detach().cpu()
+    adv_img_vis = inv_transform(adv_img)[0].detach().cpu()
+
+    diff_img = torch.abs(adv_img_vis - orig_img_vis)
+
+    if diff_img.max() > 0:
+        diff_img = diff_img / diff_img.max()
+
+    orig_img_vis = orig_img_vis.permute(1, 2, 0)
+    adv_img_vis = adv_img_vis.permute(1, 2, 0)
+    diff_img_vis = diff_img.permute(1, 2, 0)
+
+    fig, ax = plt.subplots(1, 3, figsize=(15, 8))
+
+    ax[0].imshow(orig_img_vis)
+    ax[0].set_title("Original")
+    ax[0].axis("off")
+
+    ax[1].imshow(adv_img_vis)
+    ax[1].set_title("Adversarial")
+    ax[1].axis("off")
+
+    ax[2].imshow(diff_img_vis, cmap="bwr")
+    ax[2].set_title("Difference")
+    ax[2].axis("off")
+
+    plt.tight_layout()
+    plt.show()
 
 def visualize_adversarial_examples(
     device, test_data_loader, generator: MidTermGenerator

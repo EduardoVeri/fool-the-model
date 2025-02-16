@@ -19,13 +19,13 @@ def get_args():
     parser.add_argument(
         "--data_dir",
         type=str,
-        default="../data/140k-real-and-fake-faces/",
+        default="../data/",
         help="Path to dataset directory",
     )
     parser.add_argument(
         "--csv_dir",
         type=str,
-        default="../data/140k-real-and-fake-faces/",
+        default="../data/",
         help="Path to CSV files directory",
     )
     parser.add_argument(
@@ -66,12 +66,16 @@ def initialize_weights(m):
             nn.init.constant_(m.bias, 0)
 
 
-def evaluate(loader, model, device, criterion):
+def evaluate(loader, model, device, criterion, confusion_matrix=False):
     model.eval()
     correct = 0
     total_loss = 0.0
     total_samples = 0
-
+    false_positives = 0
+    false_negatives = 0
+    true_positives = 0
+    true_negatives = 0
+    
     with torch.no_grad():
         for images, labels in tqdm(loader, desc="Evaluating", leave=False):
             images, labels = images.to(device), labels.to(device)
@@ -83,6 +87,29 @@ def evaluate(loader, model, device, criterion):
             _, predicted = torch.max(outputs, 1)
             total_samples += labels.size(0)
             correct += (predicted == labels).sum().item()
+            
+            if confusion_matrix:
+                for predict, label in zip(predicted, labels):
+                    if predict == 0 and label == 0:
+                        true_negatives += 1
+                    elif predict == 0 and label == 1:
+                        false_negatives += 1
+                    elif predict == 1 and label == 0:
+                        false_positives += 1
+                    elif predict == 1 and label == 1:
+                        true_positives += 1
+            
+    if confusion_matrix:
+        # print confusion matrix
+            print(
+                "\nConfusion Matrix:\n"
+                f"{'':<20} | {'Predicted 0':<15} | {'Predicted 1':<15}\n"
+                f"{'-'*20}-+-{'-'*15}-+-{'-'*15}\n"
+                f"{'Actual 0':<20} | {true_negatives:<15} | {false_positives:<15}\n"
+                f"{'Actual 1':<20} | {false_negatives:<15} | {true_positives:<15}"
+            )
+                    
+                
 
     accuracy = 100.0 * correct / total_samples
     avg_loss = total_loss / total_samples
@@ -226,7 +253,7 @@ def main():
     )
 
     model.load_state_dict(torch.load(args.save_model))
-    test_acc, _ = evaluate(test_loader, model, device, criterion)
+    test_acc, _ = evaluate(test_loader, model, device, criterion, True)
     logging.info(f"Test Accuracy: {test_acc:.2f}%")
 
 
