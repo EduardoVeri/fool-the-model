@@ -86,13 +86,50 @@
 \maketitle
 
 \begin{resumo}
+  Este trabalho explora a vulnerabilidade e a robustez de redes neurais diante de ataques adversariais
+  imperceptíveis aos humanos. Utilizando a base de dados “140k Real and Fake Faces”, treinou-se uma rede
+  neural convolucional, uma mini UNET e um XGBoost para a classificação de imagens faciais, atingindo alta
+  acurácia em condições normais. Em seguida, desenvolveu-se um ataque adversarial baseado em uma arquitetura
+  UNET modificada, capaz de gerar perturbações sutis que comprometem significativamente a performance do classificador.
+  Os resultados demonstram que, mesmo com perturbações invisíveis a olho nu, a confiabilidade dos sistemas de reconhecimento
+  facial pode ser severamente comprometida, ressaltando a importância de desenvolver estratégias para aumentar
+  a resiliência dos classificadores.
 
+  \textbf{Palavras-chave}: Ataques adversariais, robustez, redes neurais convolucionais, perturbações imperceptíveis, reconhecimento facial, XGBoost.
 \end{resumo}
 
 \section{Introdução}
 
-\section{Conclusão}
+O avanço das técnicas de aprendizado profundo tem permitido que sistemas de
+reconhecimento facial alcancem níveis de acurácia sem precedentes, contribuindo
+para uma ampla gama de aplicações, desde segurança pública até interfaces de
+usuário baseadas em biometria~\cite{parkhi2015deep}. Entretanto, apesar do
+desempenho elevado, diversos estudos demonstraram que redes neurais são
+inerentemente vulneráveis a perturbações adversariais - pequenas modificações
+imperceptíveis a olho nu que podem levar a classificações
+equivocadas~\cite{szegedy2014intriguingpropertiesneuralnetworks,goodfellow2015explainingharnessingadversarialexamples}.
 
+Neste contexto, o presente trabalho investiga a robustez de modelos de
+classificação de imagens faciais quando expostos a ataques adversariais sutis.
+Utilizando a base de dados ``140k Real and Fake Faces'', foram treinados três
+classificadores distintos - uma rede neural convolucional (CNN), uma versão
+reduzida de UNET e um classificador baseado em XGBoost \cite{Chen_2016}
+- que, sob condições normais, alcançaram alta performance. Em seguida,
+propõe-se um ataque adversarial que se baseia em uma arquitetura UNET
+modificada, cujo objetivo é gerar perturbações imperceptíveis que comprometam a
+confiabilidade dos classificadores.
+
+Ao integrar modelos de naturezas distintas na análise, este estudo busca
+identificar possíveis diferenças na robustez dos sistemas frente a ataques
+adversariais, evidenciando as limitações dos métodos de classificação atuais e
+a necessidade de desenvolver estratégias de defesa que aumentem a resiliência
+dos sistemas de reconhecimento facial. A abordagem proposta não só contribui
+para uma compreensão mais aprofundada das vulnerabilidades dos modelos de
+aprendizado profundo, mas também sugere caminhos para a implementação de
+mecanismos de defesa que possam mitigar os impactos desses ataques em
+aplicações críticas.
+
+\section{Conclusão}
 
 \bibliographystyle{sbc}
 \bibliography{sbc-template}
