@@ -24,6 +24,7 @@
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{float}
+\usepackage{amsmath} 
 
 % Definição de cores personalizadas
 \definecolor{mygreen}{rgb}{0,0.6,0}        % Para comentários
@@ -181,6 +182,75 @@ não ter acesso direto ao modelo alvo. Compreender e mitigar essa transferência
 é fundamental para o desenvolvimento de mecanismos de defesa robustos que
 assegurem a integridade dos sistemas de reconhecimento facial em ambientes
 críticos.
+
+\section{Metodologia}
+
+A abordagem adotada neste trabalho visa investigar a robustez de
+classificadores de imagens faciais frente a ataques adversariais
+imperceptíveis. Para isso, a metodologia foi dividida em três etapas
+principais: (i) preparação e treinamento dos modelos, (ii) desenvolvimento do
+ataque adversarial e (iii) avaliação dos resultados.
+
+\subsection{Preparação dos Dados e Treinamento dos Modelos}
+
+A base de dados utilizada foi a \textit{``140k Real and Fake Faces''}, composta
+por imagens reais e geradas, que foram previamente divididas em conjuntos de
+treinamento, validação e teste. A seguir, três modelos foram treinados para a
+classificação de imagens faciais:
+
+\begin{itemize}
+  \item \textbf{Rede Neural Convolucional (CNN):} Implementada em PyTorch, esta
+        arquitetura é composta por camadas convolucionais, seguidas por camadas de pooling,
+        normalização e camadas totalmente conectadas. Os hiperparâmetros, tais como taxa
+        de aprendizado (\texttt{[learning\_rate]}), número de épocas (\texttt{[epochs]}) e
+        tamanho do batch (\texttt{[batch\_size]}), foram ajustados para maximizar a acurácia
+        no conjunto de validação.
+
+  \item \textbf{Mini UNET:} Uma versão reduzida da tradicional arquitetura UNET foi
+        desenvolvida para explorar sua capacidade em extrair características e classificar a
+        s imagens, mantendo uma complexidade computacional inferior.
+
+  \item \textbf{XGBoost:} Utilizando o framework XGBoost~\cite{Chen_2016}, foi treinado
+        um classificador baseado em boosting, que se mostrou eficiente para problemas de
+        alta dimensionalidade.
+\end{itemize}
+
+Todos os modelos foram treinados sob condições normais, atingindo altos índices
+de acurácia no conjunto de teste.
+
+\subsection{Desenvolvimento do Ataque Adversarial}
+
+Após o treinamento dos classificadores, desenvolveu-se um ataque adversarial
+com o objetivo de gerar perturbações sutis e imperceptíveis que comprometem a
+confiabilidade dos modelos. Para isso, foi utilizada uma arquitetura UNET em miniatura,
+denominada rede adversarial, que recebe como entrada uma imagem
+normalizada (em escala \([-1, 1]\)) e gera uma perturbação. Essa perturbação é
+então limitada por um mecanismo de \textit{clamp}, de forma a garantir que as
+alterações não excedam um intervalo pré-definido \([-\epsilon, \epsilon]\).
+Formalmente, a imagem adversarial \( \text{adv\_x} \) é obtida através da
+equação:
+
+\[
+  \text{adv\_x} = \text{clamp}\Bigl(x + \text{clamp}\bigl(\text{Perturbação}(x), -[\epsilon], [\epsilon]\bigr), -1, 1\Bigr)
+\]
+
+onde \( x \) representa a imagem original. Essa abordagem assegura que as
+modificações sejam imperceptíveis ao olho humano, mas capazes de induzir erros
+nos classificadores.
+
+\subsection{Avaliação dos Resultados}
+
+A robustez dos modelos foi avaliada comparando a acurácia obtida sob condições
+normais com a acurácia após a aplicação dos ataques adversariais.
+Adicionalmente, a técnica GradCAM foi utilizada para visualizar as regiões de
+maior atenção dos modelos, permitindo identificar quais áreas (por exemplo,
+olhos e lábios) são mais suscetíveis às perturbações.
+
+A avaliação abrangeu os três classificadores de forma integrada, possibilitando
+comparar a sensibilidade de cada modelo frente às perturbações geradas pela
+rede adversarial. Os resultados quantitativos (como a redução percentual da
+acurácia) e as análises qualitativas (obtidas via GradCAM) forneceram uma visão
+abrangente sobre as vulnerabilidades dos sistemas de reconhecimento facial.
 
 \section{Conclusão}
 
