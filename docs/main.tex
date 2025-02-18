@@ -23,6 +23,7 @@
 
 \usepackage{listings}
 \usepackage{xcolor}
+\usepackage{float}
 
 % Definição de cores personalizadas
 \definecolor{mygreen}{rgb}{0,0.6,0}        % Para comentários
@@ -113,8 +114,8 @@ Neste contexto, o presente trabalho investiga a robustez de modelos de
 classificação de imagens faciais quando expostos a ataques adversariais sutis.
 Utilizando a base de dados ``140k Real and Fake Faces'', foram treinados três
 classificadores distintos - uma rede neural convolucional (CNN), uma versão
-reduzida de UNET e um classificador baseado em XGBoost \cite{Chen_2016}
-- que, sob condições normais, alcançaram alta performance. Em seguida,
+reduzida de UNET~\cite{} e um classificador baseado em XGBoost~\cite{Chen_2016}
+a - que, sob condições normais, alcançaram alta performance. Em seguida,
 propõe-se um ataque adversarial que se baseia em uma arquitetura UNET
 modificada, cujo objetivo é gerar perturbações imperceptíveis que comprometam a
 confiabilidade dos classificadores.
@@ -128,6 +129,58 @@ para uma compreensão mais aprofundada das vulnerabilidades dos modelos de
 aprendizado profundo, mas também sugere caminhos para a implementação de
 mecanismos de defesa que possam mitigar os impactos desses ataques em
 aplicações críticas.
+
+\section{Referencial Teórico}
+\subsection{Redes Neurais Convolucionais e Reconhecimento Facial}
+Redes neurais convolucionais (CNNs) têm se destacado no processamento de
+imagens devido à sua capacidade de extrair automaticamente características
+hierárquicas, desde padrões simples, como bordas e texturas, até estruturas
+complexas, essenciais para o reconhecimento facial. Estudos como o de Parkhi et
+al. (2015) demonstram que a utilização de arquiteturas profundas permite
+alcançar altos índices de acurácia, tornando as CNNs a escolha preferencial
+para aplicações em biometria.
+
+\subsection{Ataques Adversariais}
+Apesar do elevado desempenho, as CNNs são vulneráveis a perturbações
+adversariais - pequenas modificações intencionais e imperceptíveis na entrada
+que podem levar a classificações errôneas. Szegedy et al. (2013) foram
+pioneiros ao evidenciar essa fragilidade, enquanto Goodfellow et al. (2014)
+apresentaram o Fast Gradient Sign Method (FGSM) para gerar tais perturbações.
+Esses ataques exploram a alta dimensionalidade dos dados e a complexidade dos
+espaços de decisão dos modelos, comprometendo a confiabilidade dos sistemas de
+reconhecimento facial.
+
+\subsection{Estratégias de Geração de Perturbações}
+Diversas técnicas de ataque adversarial têm sido propostas, muitas baseadas na
+otimização da função de perda do modelo. Entre elas, o FGSM e suas variações
+mostram alta eficácia na geração de exemplos adversariais. No presente
+trabalho, adota-se uma abordagem inovadora que utiliza uma arquitetura UNET
+modificada para criar perturbações sutis. Essa rede adversarial é treinada para
+gerar modificações que se mantenham dentro de um intervalo pré-definido (por
+exemplo, [epsilon]), garantindo que as alterações sejam imperceptíveis ao olho
+humano, mas capazes de degradar significativamente a performance dos
+classificadores.
+
+\subsection{Outros Classificadores e Robustez dos Modelos}
+Além das CNNs, outros classificadores, como UNET e o XGBoost, têm sido
+empregados em problemas de classificação de imagens. O XGBoost, conforme
+descrito por Chen Guestrin (2016), utiliza técnicas de boosting que o tornam
+robusto e eficiente, especialmente em cenários com dados de alta
+dimensionalidade. A comparação entre esses modelos permite avaliar a
+variabilidade na robustez frente a ataques adversariais, demonstrando que,
+mesmo que a mesma perturbação seja aplicada, a sensibilidade de cada modelo
+pode variar, evidenciando a necessidade de estratégias de defesa que aumentem a
+resiliência global dos sistemas de reconhecimento facial.
+
+\subsection{Transferibilidade dos Ataques e Estratégias de Defesa}
+Um aspecto crítico dos ataques adversariais é a sua capacidade de
+transferência, isto é, a perturbação gerada para um modelo pode afetar outros
+modelos, mesmo que estes tenham arquiteturas distintas. Essa propriedade
+aumenta a ameaça dos ataques em cenários do mundo real, onde o atacante pode
+não ter acesso direto ao modelo alvo. Compreender e mitigar essa transferência
+é fundamental para o desenvolvimento de mecanismos de defesa robustos que
+assegurem a integridade dos sistemas de reconhecimento facial em ambientes
+críticos.
 
 \section{Conclusão}
 
