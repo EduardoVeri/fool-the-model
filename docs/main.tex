@@ -12,6 +12,8 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% chktex-file 44
+
 \documentclass[12pt]{article}
 
 \usepackage{sbc-template}
@@ -202,7 +204,11 @@ treinamento, validação e teste. A seguir, três modelos foram treinados para a
 classificação de imagens faciais:
 
 \begin{itemize}
-  \item \textbf{Rede Neural Convolucional (CNN):} Implementada em PyTorch, esta arquitetura é composta por camadas convolucionais, seguidas por camadas de pooling, normalização e camadas totalmente conectadas. Os hiperparâmetros, tais como taxa de aprendizado (\texttt{[learning\_rate]}), número de épocas (\texttt{[epochs]}) e tamanho do batch (\texttt{[batch\_size]}), foram ajustados para maximizar a acurácia no conjunto de validação.
+  \item \textbf{Rede Neural Convolucional (CNN):} Implementada em PyTorch, esta arquitetura
+        é composta por camadas convolucionais, seguidas por camadas de pooling, normalização e
+        camadas totalmente conectadas. Os hiperparâmetros, tais como taxa de aprendizado
+        (\texttt{[learning\_rate]}), número de épocas (\texttt{[epochs]}) e tamanho do batch
+        (\texttt{[batch\_size]}), foram ajustados para maximizar a acurácia no conjunto de validação.
 
         \begin{figure}[htbp]
           \centering
@@ -240,9 +246,13 @@ classificação de imagens faciais:
           \caption{Diagrama das arquiteturas dos modelos utilizados no trabalho.}
         \end{figure}
 
-  \item \textbf{Mini UNET:} Uma versão reduzida da tradicional arquitetura UNET foi desenvolvida para explorar sua capacidade em extrair características e classificar as imagens, mantendo uma complexidade computacional inferior.
+  \item \textbf{Mini UNET:} Uma versão reduzida da tradicional arquitetura UNET foi
+        desenvolvida para explorar sua capacidade em extrair características e classificar as
+        imagens, mantendo uma complexidade computacional inferior.
 
-  \item \textbf{XGBoost:} Utilizando o framework XGBoost~\cite{Chen_2016}, foi treinado um classificador baseado em boosting, que se mostrou eficiente para problemas de alta dimensionalidade.
+  \item \textbf{XGBoost:} Utilizando o framework XGBoost~\cite{Chen_2016}, foi treinado
+        um classificador baseado em boosting, que se mostrou eficiente para problemas de alta
+        dimensionalidade.
 \end{itemize}
 
 Todos os modelos foram treinados sob condições normais, atingindo altos índices
@@ -333,13 +343,12 @@ visualização (GradCAM) foram empregadas para analisar qualitativamente as
 regiões de maior atenção dos modelos.
 
 \subsection{Resultados Quantitativos}
-As Tabelas \ref{tab:resultados_quantitativos} e \ref{tab:resultados_metricas}
+As Tabelas~\ref{tab:resultados_quantitativos}~e~\ref{tab:resultados_metricas}
 apresentam os resultados obtidos sob condições normais e adversariais.
 
 \begin{table}[H]
   \centering
-  \caption{Desempenho dos modelos sob condições normais e adversariais}
-  \label{tab:resultados_quantitativos}
+  \caption{Desempenho dos modelos sob condições normais e adversariais}\label{tab:resultados_quantitativos}
   \begin{tabular}{lccc}
     \hline
     \textbf{Modelo} & \textbf{Acurácia Normal (\%)} & \textbf{Acurácia Adversarial (\%)} & \textbf{Redução (\%)} \\
@@ -353,8 +362,7 @@ apresentam os resultados obtidos sob condições normais e adversariais.
 
 \begin{table}[H]
   \centering
-  \caption{Métricas de desempenho sob ataque adversarial}
-  \label{tab:resultados_metricas}
+  \caption{Métricas de desempenho sob ataque adversarial}\label{tab:resultados_metricas}
   \begin{tabular}{lccc}
     \hline
     \textbf{Modelo} & \textbf{Precisão (\%)} & \textbf{Recall (\%)} & \textbf{F1-Score (\%)} \\
@@ -377,20 +385,20 @@ alterações nas áreas de interesse (por exemplo, olhos e lábios).
   \centering
   \includegraphics[width=0.45\textwidth]{gradcam_original.png}
   \includegraphics[width=0.45\textwidth]{gradcam_adversarial.png}
-  \caption{Exemplos de visualização GradCAM: (a) imagem original; (b) imagem adversarial.}
-  \label{fig:gradcam}
+  \caption{Exemplos de visualização GradCAM: (a) imagem original; (b) imagem adversarial.}\label{fig:gradcam}
 \end{figure}
 
 \subsection{Discussão dos Resultados}
 Os experimentos demonstraram que a aplicação do ataque adversarial provocou uma
 redução significativa na performance dos modelos, conforme evidenciado pela
 diminuição da acurácia e alterações nas métricas de precisão, recall e F1-Score
-(ver Tabelas~\ref{tab:resultados_quantitativos} e
-\ref{tab:resultados_metricas}). A análise qualitativa via GradCAM indicou que
-as regiões sensíveis, como os olhos e lábios, foram alteradas de forma a
-comprometer a tomada de decisão dos classificadores. Esses resultados ressaltam
-a importância de se desenvolver estratégias de defesa para aumentar a robustez
-dos sistemas de reconhecimento facial.
+(ver
+Tabelas~\ref{tab:resultados_quantitativos}~e~\ref{tab:resultados_metricas}). A
+análise qualitativa via GradCAM indicou que as regiões sensíveis, como os olhos
+e lábios, foram alteradas de forma a comprometer a tomada de decisão dos
+classificadores. Esses resultados ressaltam a importância de se desenvolver
+estratégias de defesa para aumentar a robustez dos sistemas de reconhecimento
+facial.
 
 \section{Conclusão}
 
