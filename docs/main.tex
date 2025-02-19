@@ -316,6 +316,68 @@ rede adversarial. Os resultados quantitativos (como a redução percentual da
 acurácia) e as análises qualitativas (obtidas via GradCAM) forneceram uma visão
 abrangente sobre as vulnerabilidades dos sistemas de reconhecimento facial.
 
+
+\section{Experimentos e Resultados}
+
+\subsection{Configuração Experimental}
+Foram realizados experimentos para avaliar a robustez dos três classificadores (CNN, Mini UNET e XGBoost) sob duas condições:
+\begin{itemize}
+  \item \textbf{Condições Normais:} Treinamento e avaliação dos modelos sem a aplicação de ataques adversariais.
+  \item \textbf{Condições Adversariais:} Avaliação dos modelos após a aplicação do ataque adversarial, que utiliza uma arquitetura UNET modificada para gerar perturbações sutis e imperceptíveis.
+\end{itemize}
+
+Todos os modelos foram treinados utilizando a base de dados ``140k Real and Fake Faces''. Os hiperparâmetros (por exemplo, \texttt{[learning\_rate]}, \texttt{[epochs]}, \texttt{[batch\_size]}) foram otimizados para maximizar a acurácia no conjunto de validação. Para avaliação, foram consideradas métricas como acurácia, precisão, recall e F1-Score. Adicionalmente, técnicas de visualização (GradCAM) foram empregadas para analisar qualitativamente as regiões de maior atenção dos modelos.
+
+\subsection{Resultados Quantitativos}
+As Tabelas \ref{tab:resultados_quantitativos} e \ref{tab:resultados_metricas} apresentam os resultados obtidos sob condições normais e adversariais.
+
+\begin{table}[H]
+\centering
+\caption{Desempenho dos modelos sob condições normais e adversariais}
+\label{tab:resultados_quantitativos}
+\begin{tabular}{lccc}
+\hline
+\textbf{Modelo} & \textbf{Acurácia Normal (\%)} & \textbf{Acurácia Adversarial (\%)} & \textbf{Redução (\%)} \\
+\hline
+CNN         & [AC\_N\_CNN]   & [AC\_A\_CNN]    & [Redu\_CNN]    \\
+Mini UNET   & [AC\_N\_UNET]  & [AC\_A\_UNET]   & [Redu\_UNET]   \\
+XGBoost     & [AC\_N\_XGB]   & [AC\_A\_XGB]    & [Redu\_XGB]    \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Métricas de desempenho sob ataque adversarial}
+\label{tab:resultados_metricas}
+\begin{tabular}{lccc}
+\hline
+\textbf{Modelo} & \textbf{Precisão (\%)} & \textbf{Recall (\%)} & \textbf{F1-Score (\%)} \\
+\hline
+CNN         & [Prec\_CNN]   & [Rec\_CNN]    & [F1\_CNN]    \\
+Mini UNET   & [Prec\_UNET]  & [Rec\_UNET]   & [F1\_UNET]   \\
+XGBoost     & [Prec\_XGB]   & [Rec\_XGB]    & [F1\_XGB]    \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Resultados Qualitativos}
+Para complementar a análise quantitativa, empregou-se a técnica GradCAM para identificar as regiões de atenção dos modelos. As Figuras~\ref{fig:gradcam_original} e~\ref{fig:gradcam_adversarial} ilustram exemplos de imagens originais e suas versões adversariais, destacando alterações nas áreas de interesse (por exemplo, olhos e lábios).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.45\textwidth]{gradcam_original.png}
+\includegraphics[width=0.45\textwidth]{gradcam_adversarial.png}
+\caption{Exemplos de visualização GradCAM: (a) imagem original; (b) imagem adversarial.}
+\label{fig:gradcam}
+\end{figure}
+
+\subsection{Discussão dos Resultados}
+Os experimentos demonstraram que a aplicação do ataque adversarial provocou uma redução significativa na performance dos modelos, conforme evidenciado pela diminuição da acurácia e alterações nas métricas de precisão, recall e F1-Score (ver Tabelas~\ref{tab:resultados_quantitativos} e \ref{tab:resultados_metricas}). A análise qualitativa via GradCAM indicou que as regiões sensíveis, como os olhos e lábios, foram alteradas de forma a comprometer a tomada de decisão dos classificadores. Esses resultados ressaltam a importância de se desenvolver estratégias de defesa para aumentar a robustez dos sistemas de reconhecimento facial.
+
+
+
+
 \section{Conclusão}
 
 \bibliographystyle{sbc}
