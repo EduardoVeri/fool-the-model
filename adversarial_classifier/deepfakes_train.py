@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 from dataloader.dataloader import DeepFakeDataset
 from arch.deepfake_cnn import CNN
+from arch.decision_tree import DTClassifier as DT
 
 
 def get_args():
@@ -234,7 +235,8 @@ def main():
         num_workers=4,
         pin_memory=True,
     )
-
+    
+    #model = DT()
     model = CNN().to(device)
     model.apply(initialize_weights)
     criterion = nn.CrossEntropyLoss()
