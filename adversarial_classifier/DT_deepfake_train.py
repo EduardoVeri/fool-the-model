@@ -8,7 +8,8 @@ import joblib
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from dataloader.dataloader import DeepFakeDataset
-from arch.decision_tree import DTClassifier
+from arch.decision_tree import DTClassifier as DT
+from arch.gradient_tree_boosting import GTBClassifier as GTB
 
 def get_args():
     parser = argparse.ArgumentParser(
@@ -94,7 +95,8 @@ def main():
     X_test, y_test = extract_features(test_dataset)
 
     # Instancia o modelo Decision Tree
-    dt_model = DTClassifier(random_state=args.seed)
+    dt_model = DT(random_state=args.seed)
+    dt_model = GTB(random_state=args.seed)
 
     # Otimização dos hiperparâmetros via GridSearchCV
     param_grid = {
