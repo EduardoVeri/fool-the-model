@@ -10,7 +10,15 @@ class DeepFakeDataset(Dataset):
         self.root_dir = root_dir
         self.transform = transform
         if fraction < 1:
-            self.data = self.data.sample(frac=fraction).reset_index(drop=True)
+            # Make a sample of the dataset
+            # The values of Fake and Real must be balanced
+            fake_images = self.data[self.data["label"] == 0]
+            real_images = self.data[self.data["label"] == 1]
+            fake_images = fake_images.sample(frac=fraction / 2)
+            real_images = real_images.sample(frac=fraction / 2)
+            self.data = pd.concat([fake_images, real_images])
+            
+        self.data = self.data.reset_index(drop=True)
 
     def __len__(self):
         return len(self.data)
