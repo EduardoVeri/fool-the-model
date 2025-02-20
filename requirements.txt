@@ -10,4 +10,5 @@ pyyaml
 opencv-python
 argparse
 joblib
-sklearn
+scikit-learn
+xgboost

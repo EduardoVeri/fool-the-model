@@ -236,7 +236,6 @@ def main():
         pin_memory=True,
     )
     
-    #model = DT()
     model = CNN().to(device)
     model.apply(initialize_weights)
     criterion = nn.CrossEntropyLoss()

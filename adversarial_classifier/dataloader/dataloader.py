@@ -5,7 +5,7 @@ import pandas as pd
 
 
 class DeepFakeDataset(Dataset):
-    def __init__(self, csv_file, root_dir, fraction=1, transform=None):
+    def __init__(self, csv_file, root_dir, fraction=0.01, transform=None):
         self.data = pd.read_csv(csv_file)
         self.root_dir = root_dir
         self.transform = transform

@@ -1,5 +1,5 @@
 train-adversary-all-real:
-  data-dir: ../data
+  data-dir: ../data/archive
   classifier-path: ../results/deepfake/cnn_65_99.03.pth
   save-path: ../results/adversarial/good_perception/e01_allreal_adversary.pth
   img-size: 128
@@ -8,6 +8,6 @@ train-adversary-all-real:
   epochs: 100
   lper: 0 # Deactivate
   seed: 42
-  dataset-fraction: 0.02
+  dataset-fraction: 0.01
   epsilon: 0.01
   
