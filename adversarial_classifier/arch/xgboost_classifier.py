@@ -43,6 +43,14 @@ class XGBClassifierWrapper:
         Retorna a acurácia do modelo nos dados fornecidos.
         """
         return self.model.score(X, y)
+
+    def print_confusion_matrix(self, X, y):
+        """
+        Imprime a matriz de confusão do modelo nos dados fornecidos.
+        """
+        y_pred = self.predict(X)
+        cm = confusion_matrix(y, y_pred)
+        print(cm)
     
     def predict_proba(self, X):
         """
