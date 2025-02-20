@@ -5,7 +5,7 @@ from sklearn.metrics import accuracy_score
 # Classe wrapper para o classificador XGBoost utilizando xgboost.XGBClassifier
 class XGBClassifierWrapper:
     def __init__(self, n_estimators=100, learning_rate=0.1, max_depth=3, random_state=42,
-                 use_label_encoder=False, eval_metric='logloss'):
+                 use_label_encoder=False, eval_metric='logloss', device="cuda", tree_method="hist"):
         """
         Inicializa o modelo XGBoost com os parâmetros básicos.
         
@@ -23,7 +23,9 @@ class XGBClassifierWrapper:
             max_depth=max_depth,
             random_state=random_state,
             use_label_encoder=use_label_encoder,
-            eval_metric=eval_metric
+            eval_metric=eval_metric,
+            device=device,
+            tree_method=tree_method
         )
     
     def fit(self, X_train, y_train):
@@ -75,3 +77,5 @@ class XGBClassifierWrapper:
         # Atualiza o modelo com o melhor estimador encontrado
         self.model = grid_search.best_estimator_
         return grid_search.best_params_, grid_search.best_score_
+
+

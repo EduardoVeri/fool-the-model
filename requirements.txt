@@ -12,3 +12,5 @@ argparse
 joblib
 scikit-learn
 xgboost
+scikit-image
+pandas

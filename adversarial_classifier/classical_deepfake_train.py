@@ -19,13 +19,13 @@ def get_args():
     parser.add_argument(
         "--data_dir",
         type=str,
-        default="../data/",
+        default="./data/archive/real_vs_fake/real-vs-fake",
         help="Path to dataset directory",
     )
     parser.add_argument(
         "--csv_dir",
         type=str,
-        default="../data/",
+        default="./data/archive/",
         help="Path to CSV files directory",
     )
     parser.add_argument(
