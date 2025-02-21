@@ -1,6 +1,7 @@
 import xgboost as xgb
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
 
 # Classe wrapper para o classificador XGBoost utilizando xgboost.XGBClassifier
 class XGBClassifierWrapper:

@@ -12,29 +12,130 @@ from torchvision import transforms
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import lpips
+import pywt
+import cv2
 import numpy as np
 
-from dataloader.dataloader import get_dataloaders, DeepFakeDataset
+from dataloader.dataloader import get_dataloaders, DeepFakeDataset, FakeDataset
 from arch.adversarial_generator import MidTermGenerator
+from classical_deepfake_train import extract_wavelet_features
+from skimage.feature import hog, local_binary_pattern
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 # Importa o classificador do scikit-learn – por exemplo, o Decision Tree
 from arch.decision_tree import DTClassifier
 
 # Como os modelos do scikit-learn não são diferenciáveis, criamos uma função wrapper
 # para extrair as predições (probabilidades) e convertê-las em tensor (sem gradientes)
-def classifier_forward(classifier, images):
-    # images: tensor com formato [B, C, H, W] com valores no intervalo [-1, 1]
-    # Normalizamos para [0,1]
-    images_norm = (images + 1) / 2.0
-    # Converter para numpy e reorganizar se necessário (a depender de como o dataset foi extraído)
+def classifier_forward(classifier, images_norm,
+                    hog_orientations=9, 
+                    hog_pixels_per_cell=(8, 8), 
+                    hog_cells_per_block=(2, 2),
+                    lbp_P=8, 
+                    lbp_R=1, 
+                    lbp_method='uniform',
+                    wavelet='haar',
+                    wavelet_level=2):
+    """
+    Processa as imagens adversariais antes de passá-las ao classificador.
+    - Normaliza as imagens
+    - Converte para numpy
+    - Extrai features
+    - Prediz com o classificador do scikit-learn
+    """
+
+    # Normaliza para [0,1]
+    
     images_np = images_norm.detach().cpu().numpy()
-    # O classificador espera cada imagem como vetor (flatten)
-    B = images_np.shape[0]
-    images_np = images_np.reshape(B, -1)
-    # Obtemos as probabilidades usando o método predict_proba do scikit-learn
-    outputs_np = classifier.predict_proba(images_np)
-    # Convertemos para tensor; esses outputs estarão sem gradiente
-    outputs = torch.tensor(outputs_np, device=images.device, dtype=torch.float)
+    X_chunk = []
+    lbp_n_bins = lbp_P + 2
+
+    # Extrai features do adversarial usando a mesma técnica do treinamento
+    for image in images_np:
+        if hasattr(image, 'numpy'):
+            np_img = image.numpy()
+        else:
+            np_img = image
+        
+        # If the image is in channels-first format (e.g., (3, H, W)), transpose it.
+        if len(np_img.shape) == 3 and np_img.shape[0] == 3:
+            np_img = np.transpose(np_img, (1, 2, 0))
+        
+        # --- Color Histogram Features ---
+        # If the image is color (i.e. channels-last and 3 channels), compute per-channel histograms.
+        if len(np_img.shape) == 3 and np_img.shape[-1] == 3:
+            color_hist_features = []
+            # Using 32 bins per channel
+            for channel in range(3):
+                channel_data = np_img[:, :, channel]
+                hist, _ = np.histogram(channel_data, bins=32, range=(0, 256))
+                hist = hist.astype("float")
+                hist /= (hist.sum() + 1e-7)
+                color_hist_features.extend(hist)
+            color_hist_features = np.array(color_hist_features)
+        else:
+            color_hist_features = np.array([])
+        
+        # --- Grayscale Conversion ---
+        # For the rest of the features, work with a grayscale image.
+        if len(np_img.shape) == 3:
+            if np_img.shape[-1] == 3:
+                gray = cv2.cvtColor(np_img, cv2.COLOR_RGB2GRAY)
+            elif np_img.shape[-1] == 4:
+                gray = cv2.cvtColor(np_img, cv2.COLOR_RGBA2GRAY)
+            else:
+                gray = np_img[:, :, 0]
+        else:
+            gray = np_img
+        
+        # Convert to uint8 for consistency in further processing.
+        gray_uint8 = gray.astype(np.uint8)
+
+        # --- HOG Features ---
+        hog_features = hog(
+            gray_uint8,
+            orientations=hog_orientations,
+            pixels_per_cell=hog_pixels_per_cell,
+            cells_per_block=hog_cells_per_block,
+            block_norm='L2-Hys',
+            transform_sqrt=True,
+            feature_vector=True
+        )
+        
+        # --- LBP Features ---
+        lbp = local_binary_pattern(gray_uint8, lbp_P, lbp_R, method=lbp_method)
+        lbp_hist, _ = np.histogram(lbp.ravel(), bins=lbp_n_bins, range=(0, lbp_n_bins))
+        lbp_hist = lbp_hist.astype("float")
+        lbp_hist /= (lbp_hist.sum() + 1e-7)
+        
+        # --- Wavelet Features ---
+        wavelet_feats = extract_wavelet_features(gray_uint8, wavelet=wavelet, level=wavelet_level)
+        
+        # --- Hu Moments ---
+        moments = cv2.moments(gray_uint8)
+        huMoments = cv2.HuMoments(moments).flatten()
+        # Log-transform for numerical stability.
+        huMoments = -np.sign(huMoments) * np.log10(np.abs(huMoments) + 1e-7)
+        
+        # Concatenate all feature sets.
+        combined_features = np.hstack([
+            hog_features,
+            lbp_hist,
+            wavelet_feats,
+            color_hist_features,
+            huMoments
+        ])
+        X_chunk.append(combined_features)
+        #y_chunk.append(label)
+    
+    features = np.array(X_chunk)
+    #np.array(y_chunk)
+
+    # Gera as predições do classificador
+    outputs_np = classifier.predict_proba(features)
+
+    # Converte para tensor PyTorch
+    outputs = torch.tensor(outputs_np, device=images_norm.device, dtype=torch.float)
     return outputs
 
 def get_args():
@@ -45,7 +146,7 @@ def get_args():
         "--config-path",
         "-c",
         type=str,
-        default="./configs/adv_config.yaml",
+        default="D:/Programs/VS repos/Fool the model/fool-the-model/adversarial_classifier/configs/adv_config.yaml",
         help="Path to the configuration file.",
     )
     parser.add_argument(
@@ -129,6 +230,7 @@ def train(
         epoch_victim_acc = []
 
         loop = tqdm(train_data_loader, desc=f"Epoch [{epoch+1}/{num_epochs}]", leave=False)
+
         for imgs, labels in loop:
             imgs = imgs.to(device)
             labels = labels.to(device)
@@ -137,9 +239,10 @@ def train(
             adv_imgs = generator(imgs)
             # Normaliza para [0,1] para o classificador
             adv_imgs_norm = (adv_imgs + 1) / 2.0
-
+            
             # Usa o wrapper para obter as predições do classificador (não diferenciável)
-            outputs = classifier_forward(classifier, adv_imgs)
+            outputs = classifier_forward(classifier, adv_imgs_norm)
+
             # Cria rótulos "inversos" – por exemplo, tenta forçar a predição para a classe 1
             adv_labels = torch.ones_like(labels)
 
@@ -157,7 +260,7 @@ def train(
             if l_pixel > 0:
                 loss_pixel = l_pixel * pixel_loss(adv_imgs, imgs)
 
-            total_loss = loss_adv + loss_perceptual_val + loss_pixel
+            total_loss = loss_perceptual_val + loss_pixel
 
             epoch_adv_losses.append(loss_adv.item())
             epoch_perceptual_losses.append(loss_perceptual_val.item())

@@ -3,6 +3,20 @@ import os
 from skimage import io
 import pandas as pd
 
+class FakeDataset:
+    """
+    Classe auxiliar para converter imagens adversariais geradas pelo adversarial em um formato compatível
+    com extract_features_parallel().
+    """
+
+    def __init__(self, images):
+        self.images = images
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, idx):
+        return self.images[idx], 0  # Retorna 0 como rótulo placeholder
 
 class DeepFakeDataset(Dataset):
     def __init__(self, csv_file, root_dir, fraction=0.01, transform=None):

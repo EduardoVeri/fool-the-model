@@ -26,13 +26,13 @@ def get_args():
     parser.add_argument(
         "--data_dir",
         type=str,
-        default="./data/archive/real_vs_fake/real-vs-fake",
+        default="./data",
         help="Path to dataset directory",
     )
     parser.add_argument(
         "--csv_dir",
         type=str,
-        default="./data/archive/",
+        default="./data",
         help="Path to CSV files directory",
     )
     parser.add_argument(
@@ -48,7 +48,7 @@ def get_args():
     parser.add_argument(
         "--fraction",
         type=float,
-        default=1.0,
+        default=0.10,
         help="Fraction of the dataset to use (for debugging)",
     )
     return parser.parse_args()
