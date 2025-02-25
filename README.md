@@ -1,11 +1,18 @@
 # Fool-the-Model
 
-A framework for training and evaluating adversarial attacks against DeepFake classification models. This project provides:
 
-- **CNN, Unet, and XGBoost classifiers** to detect DeepFakes.
-- **Adversarial Generator** to craft subtle perturbations.
-- **Training scripts** for both the detector and the adversarial generator.
-- **Visualization tools** to inspect adversarial examples.
+This repository contains the final project for Information Security course at the University of Campinas (UNICAMP). The project aims to develop adversarial perturbations against DeepFake classifiers. The project is divided into two main parts: the development of DeepFake classifiers and the generation of adversarial examples to fool these classifiers. 
+
+Read more in the project report ["Fool the Model: Developing Adversarial Perturbations Against DeepFake Classifiers"](./docs/main.pdf).
+
+<p align="center">
+  <img src="./docs/figs/gradcam-imagem-falsa.png" width="500"/>
+</p>
+
+<p align="center">
+  <img src="./docs/figs/pixels-diff-imagem-falsa.png" width="500"/>
+</p>
+
 
 ## Contents
 
