@@ -1,6 +1,6 @@
-# Parallel Performance Analysis of Contaminant Diffusion Models
+# Fool the Model: Developing Adversarial Perturbations Against DeepFake Classifiers
 
-This repository contains the LaTeX source files for the report titled "Análise de Desempenho Paralelo de Modelos de Difusão de Contaminantes em Água." The report analyzes the performance of sequential and parallel implementations of contaminant diffusion models using OpenMP. It discusses implementation details, compares performance metrics, and validates the models outputs.
+This repository contains the LaTeX source files for the report titled "Fool the Model: Developing Adversarial Perturbations Against DeepFake Classifiers". The report provides an overview of the project, including the motivation, methodology, results, and conclusions.
 
 👉 **[View the compiled PDF report here](./main.pdf)**.
 
