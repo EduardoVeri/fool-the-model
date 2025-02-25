@@ -97,7 +97,7 @@
     imperceptíveis aos humanos. Utilizando a base de dados “140k Real and Fake Faces”, treinou-se uma rede
     neural convolucional, uma mini UNET e um XGBoost para a classificação de imagens faciais, atingindo alta
     acurácia em condições normais. Em seguida, desenvolveu-se um ataque adversarial baseado em uma arquitetura
-    UNET modificada, capaz de gerar perturbações sutis que comprometem significativamente o desempenho do classificador.
+    UNET, capaz de gerar perturbações sutis que comprometem significativamente o desempenho do classificador.
     Os resultados demonstram que, mesmo com perturbações invisíveis a olho nu, a confiabilidade dos sistemas de reconhecimento
     facial pode ser severamente comprometida, ressaltando a importância de desenvolver estratégias para aumentar
     a resiliência dos classificadores.
@@ -161,12 +161,12 @@ reconhecimento facial.
 Diversas técnicas de ataque adversarial têm sido propostas, baseadas na
 otimização da função de perda do modelo. Entre elas, o FGSM e suas variações
 mostram alta eficácia na geração de exemplos adversariais. Neste trabalho,
-adota-se uma abordagem inovadora que utiliza uma arquitetura UNET modificada
-para criar perturbações sutis. A escolha da UNET como base se justifica por sua
-capacidade comprovada de capturar detalhes contextuais e preservar informações
-espaciais, características que foram originalmente exploradas por Ronneberger
-et al. (2015) em seu trabalho seminal. Adaptamos essa estrutura para garantir
-que as modificações permaneçam num intervalo pré-definido (por exemplo,
+adota-se uma abordagem que utiliza uma arquitetura UNET para criar perturbações
+sutis. A escolha da UNET como base se justifica por sua capacidade comprovada
+de capturar detalhes contextuais e preservar informações espaciais,
+características que foram originalmente exploradas por Ronneberger et al.
+(2015) em seu trabalho. Adaptamos essa estrutura para garantir que as
+modificações permaneçam num intervalo pré-definido (por exemplo,
 [$-\epsilon$,$\epsilon$]), assegurando que as perturbações sejam imperceptíveis
 ao olho humano, mas capazes de degradar significativamente o desempenho dos
 classificadores.
@@ -185,21 +185,23 @@ cruciais.
 
 O XGBoost, conforme descrito por Chen Guestrin (2016), utiliza técnicas de
 boosting que o tornam robusto e eficiente, especialmente em cenários com dados
-de alta dimensionalidade. A comparação entre esses modelos permite avaliar a
-variabilidade na robustez frente a ataques adversariais, demonstrando que,
-mesmo que a mesma perturbação seja aplicada, a sensibilidade de cada modelo
-pode variar, evidenciando a necessidade de estratégias defensivas que aumentem
-a resiliência global dos sistemas de reconhecimento facial.
+de alta dimensionalidade.
+
+A comparação entre esses modelos permite avaliar a variabilidade na robustez
+frente a ataques adversariais, demonstrando que, mesmo que a mesma perturbação
+seja aplicada, a sensibilidade de cada modelo pode variar, evidenciando a
+necessidade de estratégias defensivas que aumentem a resiliência global dos
+sistemas de reconhecimento facial.
 
 \subsection{Transferibilidade dos Ataques e Estratégias defensivas}
 Um aspecto crítico dos ataques adversariais é a sua capacidade de
 transferência, isto é, a perturbação gerada para um modelo pode afetar outros
 modelos, mesmo que estes tenham arquiteturas distintas. Essa propriedade
 aumenta a ameaça dos ataques em cenários do mundo real, onde o atacante pode
-não ter acesso direto ao modelo alvo \cite{tramer2021}. Compreender e mitigar essa transferência
-é fundamental para o desenvolvimento de mecanismos de defesa robustos que
-assegurem a integridade dos sistemas de reconhecimento facial em ambientes
-críticos.
+não ter acesso direto ao modelo alvo \cite{tramer2021}. Compreender e mitigar
+essa transferência é fundamental para o desenvolvimento de mecanismos de defesa
+robustos que assegurem a integridade dos sistemas de reconhecimento facial em
+ambientes críticos.
 
 \section{Metodologia}
 
@@ -254,7 +256,7 @@ classificação de imagens faciais:
                   \draw [->] (fc1) -- (fc2);
                   \draw [->] (fc2) -- (fc3);
               \end{tikzpicture}
-              \caption{Diagrama das arquiteturas dos modelos utilizados no trabalho.}
+              \caption{Diagrama da arquitetura da CNN.}
           \end{figure}
 
     \item \textbf{Mini UNET:} Uma versão reduzida da tradicional arquitetura UNET foi
@@ -317,13 +319,12 @@ de acurácia no conjunto de teste.
 
 Após o treinamento dos classificadores, desenvolveu-se um ataque adversarial
 visando gerar perturbações sutis e imperceptíveis que comprometem a
-confiabilidade dos modelos. Para isso, foi utilizada uma arquitetura UNET
-modificada, denominada rede adversarial, que recebe como entrada uma imagem
-normalizada (em escala \([-1, 1]\)) e gera uma perturbação. Essa perturbação é
-então limitada por um mecanismo de \textit{clamp}, para garantir que as
-alterações não excedam um intervalo pré-definido \([-\epsilon, \epsilon]\).
-Formalmente, a imagem adversarial \( \text{adv\_x} \) é obtida através da
-equação:
+confiabilidade dos modelos. Para isso, foi utilizada uma arquitetura UNET,
+denominada rede adversarial, que recebe como entrada uma imagem normalizada (em
+escala \([-1, 1]\)) e gera uma perturbação. Essa perturbação é então limitada
+por um mecanismo de \textit{clamp}, para garantir que as alterações não excedam
+um intervalo pré-definido \([-\epsilon, \epsilon]\). Formalmente, a imagem
+adversarial \( \text{adv\_x} \) é obtida através da equação:
 
 \[
     \text{adv\_x} = \text{clamp}\Bigl(x + \text{clamp}\bigl(\text{Perturbação}(x), -[\epsilon], [\epsilon]\bigr), -1, 1\Bigr)
@@ -362,24 +363,40 @@ nos classificadores.
         };
         \draw [->] (final) -- (clamp);
     \end{tikzpicture}
-    \caption{Diagrama das arquiteturas dos modelos utilizados no trabalho.}
+    \caption{Diagrama da rede adversarial.}
 \end{figure}
 
 \subsection{Avaliação Cruzada do Ataque Adversarial}
-Além da avaliação convencional dos ataques adversariais, foi realizado um estudo adicional para investigar a generalização das perturbações geradas pelo ataque e a eficácia dos ataques adversariais em diferentes contextos. Esse estudo consiste em treinar a rede adversarial contra um modelo específico e, posteriormente, testá-la contra outro classificador não visto durante o treinamento do ataque.
+Além da avaliação convencional dos ataques adversariais, foi realizado um
+estudo adicional para investigar a generalização das perturbações geradas pelo
+ataque e a eficácia dos ataques adversariais em diferentes contextos. Esse
+estudo consiste em treinar a rede adversarial contra um modelo específico e,
+posteriormente, testá-la contra outro classificador não visto durante o
+treinamento do ataque.
 
-O objetivo dessa abordagem é determinar se as perturbações adversariais são específicas ao modelo para o qual foram treinadas ou se possuem propriedades transferíveis, capazes de enganar diferentes arquiteturas de classificação. Para isso, foi realizado o seguinte procedimento experimental:
+O objetivo dessa abordagem é determinar se as perturbações adversariais são
+específicas ao modelo para o qual foram treinadas ou se possuem propriedades
+transferíveis, capazes de enganar diferentes arquiteturas de classificação.
+Para isso, foi realizado o seguinte procedimento experimental:
 
-Treinamento da rede adversarial para enganar um classificador específico, escolhendo entre CNN ou UNET.
-Geração das imagens adversariais utilizando a rede treinada.
-Aplicação dessas imagens adversariais no outro classificador para avaliar o impacto e o desempenho na detecção das imagens modificadas.
-Medição da eficácia do ataque por meio de métricas como acurácia, precisão, recall e F1-score, comparando os resultados pré e pós-ataque em cada cenário.
+Treinamento da rede adversarial para enganar um classificador específico,
+escolhendo entre CNN ou UNET. Geração das imagens adversariais utilizando a
+rede treinada. Aplicação dessas imagens adversariais no outro classificador
+para avaliar o impacto e o desempenho na detecção das imagens modificadas.
+Medição da eficácia do ataque por meio de métricas como acurácia, precisão,
+recall e F1-score, comparando os resultados pré e pós-ataque em cada cenário.
 
 Com essa avaliação, é possível responder a duas questões fundamentais:
 
-As perturbações adversariais são específicas ao modelo utilizado no treinamento?
-As perturbações podem ser generalizadas para outros classificadores, sugerindo uma vulnerabilidade compartilhada entre diferentes arquiteturas?
-Se um ataque treinado contra um modelo não afeta significativamente outro classificador, isso indica que a adversarial possui um comportamento fortemente dependente da arquitetura alvo. No entanto, se a adversarial treinada em um modelo reduz drasticamente a acurácia do outro, isso sugere a existência de padrões estruturais comuns entre os modelos, tornando-os vulneráveis a ataques transferíveis.
+As perturbações adversariais são específicas ao modelo utilizado no
+treinamento? As perturbações podem ser generalizadas para outros
+classificadores, sugerindo uma vulnerabilidade compartilhada entre diferentes
+arquiteturas? Se um ataque treinado contra um modelo não afeta
+significativamente outro classificador, isso indica que a adversarial possui um
+comportamento fortemente dependente da arquitetura alvo. No entanto, se a
+adversarial treinada em um modelo reduz drasticamente a acurácia do outro, isso
+sugere a existência de padrões estruturais comuns entre os modelos, tornando-os
+vulneráveis a ataques transferíveis.
 
 \subsection{Avaliação dos Resultados}
 
@@ -447,22 +464,23 @@ sua acurácia base já estava inferior à dos demais.
 A Tabela~\ref{tab:resultados_metricas} detalha outras métricas de desempenho
 dos modelos sob ataque adversarial. Nota-se que, para os três modelos, a
 precisão permanece muito elevada (próxima de 100\%), indicando que, quando os
-modelos classificam uma imagem como falsa, essa é com certeza uma imagem falsa.
-Contudo, os valores de recall são significativamente baixos – 25.57\% para a
-CNN, 16.97\% para a Mini UNET e 13.92\% para o XGBoost – o que reflete uma alta
-taxa de falsos negativos. Portanto, resultados indicam que a capacidade de
-identificar corretamente todas as amostras adversariais é comprometida.
+modelos classificam uma imagem como falsa, essa predição possuí alta
+confiabilidade. Contudo, os valores de recall são significativamente baixos –
+25.57\% para a CNN, 16.97\% para a Mini UNET e 13.92\% para o XGBoost – o que
+reflete uma alta taxa de falsos negativos. Portanto, resultados indicam que a
+capacidade de identificar corretamente todas as amostras adversariais é
+comprometida.
 
 \begin{table}[htbp]
     \centering
     \caption{Métricas de desempenho sob ataque adversarial}\label{tab:resultados_metricas}
     \begin{tabular}{lccc}
         \hline
-        \textbf{Modelo} & \textbf{Precisão (\%)} & \textbf{Recall (\%)} & \textbf{F1-Score (\%)} \\
+        \textbf{Modelo} & \textbf{Precisão (\%)} & \textbf{Recall (\%)} & \textbf{F1-Score} \\
         \hline
-        CNN             & 100\%                  & 25.57\%              & 0.4073                 \\
-        Mini UNET       & 99.94\%                & 16.97\%              & 0.2901                 \\
-        XGBoost         & 99.70\%                & 13.92\%              & 0.2443                 \\
+        CNN             & 100\%                  & 25.57\%              & 0.4073            \\
+        Mini UNET       & 99.94\%                & 16.97\%              & 0.2901            \\
+        XGBoost         & 99.70\%                & 13.92\%              & 0.2443            \\
         \hline
     \end{tabular}
 \end{table}
@@ -482,11 +500,11 @@ substancialmente menor no desempenho quando submetido ao ataque adversarial.
     \caption{Métricas de desempenho utilizando a avaliação cruzada.}\label{tab:resultados_cruzada}
     \begin{tabular}{llcccc}
         \hline
-        \textbf{Treinado} & \textbf{Usado} & \textbf{Acurácia (\%)} & \textbf{Precisão (\%)} & \textbf{Recall (\%)} & \textbf{F1-Score (\%)} \\
+        \textbf{Treinado} & \textbf{Avaliado} & \textbf{Acurácia (\%)} & \textbf{Precisão (\%)} & \textbf{Recall (\%)} & \textbf{F1-Score} \\
 
         \hline
-        CNN               & UNET           & 84.14\%                & 99.53\%                & 68.61\%              & 0.8122                 \\
-        UNET              & CNN            & 93.16\%                & 99.91\%                & 86.39\%              & 0.9265                 \\
+        CNN               & UNET              & 84.14\%                & 99.53\%                & 68.61\%              & 0.8122            \\
+        UNET              & CNN               & 93.16\%                & 99.91\%                & 86.39\%              & 0.9265            \\
         \hline
     \end{tabular}
 \end{table}
@@ -520,7 +538,6 @@ significativas na decisão final do classificador.
     \caption{Exemplos de imagens adversariais geradas pela CNN e UNET e a diferença no que foi alterado com base na imagem original }\label{fig:pixels_diff_imagem_falsa}
 \end{figure}
 
-
 Por fim, a Figura~\ref{fig:pixels_diff_imagem_falsa} ilustra as diferenças
 entre a imagem adversarial e a imagem original. Nota-se que ambas as imagens
 apresentam ruídos imperceptíveis a olho nu, atingindo o objetivo de gerar uma
@@ -534,12 +551,13 @@ ataque adversarial (Tabela~\ref{tab:resultados_metricas}).
 
 Este trabalho teve como objetivo investigar a vulnerabilidade e a robustez de
 diferentes classificadores de imagens faciais diante de ataques adversariais
-imperceptíveis. A aplicação do ataque adversarial demonstrou que perturbações
-sutis podem degradar significativamente o desempenho dos classificadores,
-sobretudo das redes neurais, como indicado pelas expressivas reduções de
-acurácia e pelos baixos índices de recall. Além disso, os mapas de calor
-gerados via GradCAM evidenciaram que as áreas de interesse dos modelos, tais
-como olhos e lábios, foram alteradas de maneira distinta, dependendo da
+imperceptíveis, além da análise da transferibilidade de vulnerabilidade entre
+modelos Deep Learning distintos. A aplicação do ataque adversarial demonstrou
+que perturbações sutis podem degradar significativamente o desempenho dos
+classificadores, sobretudo das redes neurais, como indicado pelas expressivas
+reduções de acurácia e pelos baixos índices de recall. Além disso, os mapas de
+calor gerados via GradCAM evidenciaram que as áreas de interesse dos modelos,
+tais como olhos e lábios, foram alteradas de maneira distinta, dependendo da
 arquitetura. Em particular, a CNN mostrou uma robustez relativa maior, pois
 suas regiões de atenção foram apenas realçadas, enquanto a versão reduzida da
 UNET evidenciou uma maior facilidade para alterar os resultados esperados,
@@ -547,7 +565,8 @@ refletindo vulnerabilidades mais acentuadas.
 
 Além disso, a avaliação cruzada dos ataques adversariais revelou que as
 perturbações possuem propriedades transferíveis entre os modelos, embora a
-eficácia do ataque varie conforme a arquitetura-alvo. Esses resultados
+eficácia do ataque varie conforme a arquitetura-alvo e não tenha atingido uma
+redução tão considerável quanto os ataques não cruzados. Esses resultados
 enfatizam não apenas as limitações dos métodos de classificação atuais, mas
 também a necessidade de desenvolver estratégias defensivas mais robustas que
 possam mitigar os impactos desses ataques em aplicações críticas, como o
@@ -555,11 +574,11 @@ reconhecimento facial.
 
 Por fim, este estudo contribuiu para uma compreensão mais aprofundada das
 vulnerabilidades presentes em sistemas baseados em aprendizado profundo,
-evidenciando que mesmo perturbações imperceptíveis podem comprometer a
-integridade dos resultados. Destaca-se a importância de se adotar mecanismos
-defensivos e de se explorar novas técnicas de treinamento que considerem a
-adversarialidade como parte integrante do processo de aprendizado, visando
-aumentar a resiliência dos modelos.
+evidenciando que mesmo perturbações imperceptíveis ao olhar humano podem
+comprometer a integridade dos resultados. Destaca-se a importância de se adotar
+mecanismos defensivos e de se explorar novas técnicas de treinamento que
+considerem a adversarialidade como parte integrante do processo de aprendizado,
+visando aumentar a resiliência dos modelos.
 
 \bibliographystyle{sbc}
 \bibliography{sbc-template}
