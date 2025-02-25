@@ -15,7 +15,7 @@ A framework for training and evaluating adversarial attacks against DeepFake cla
     - [Install Dependencies](#install-dependencies)
   - [Download Dataset](#download-dataset)
     - [(Linux only) Alternative Dataset Download](#linux-only-alternative-dataset-download)
-  - [Usage](#usage)
+  - [Training and Evaluation](#training-and-evaluation)
     - [Train the CNN or UNET classifier](#train-the-cnn-or-unet-classifier)
     - [Train the XGBoost classifier](#train-the-xgboost-classifier)
     - [Train the adversarial generator](#train-the-adversarial-generator)
@@ -69,7 +69,10 @@ You can also use the `download_dataset.sh` script to download and extract the da
 ./download_dataset.sh
 ```
 
-## Usage
+## Training and Evaluation
+
+> ![NOTE]
+> Every script have a help option that you can use to see the available arguments. For example, `python deepfakes_train.py --help`.
 
 ### Train the CNN or UNET classifier
 
