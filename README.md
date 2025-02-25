@@ -71,7 +71,7 @@ You can also use the `download_dataset.sh` script to download and extract the da
 
 ## Training and Evaluation
 
-> ![NOTE]
+> [!NOTE]
 > Every script have a help option that you can use to see the available arguments. For example, `python deepfakes_train.py --help`.
 
 ### Train the CNN or UNET classifier
