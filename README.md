@@ -9,10 +9,6 @@ Read more in the project report ["Fool the Model: Developing Adversarial Perturb
   <img src="./docs/figs/gradcam-imagem-falsa.png" width="500"/>
 </p>
 
-<p align="center">
-  <img src="./docs/figs/pixels-diff-imagem-falsa.png" width="500"/>
-</p>
-
 
 ## Contents
 
