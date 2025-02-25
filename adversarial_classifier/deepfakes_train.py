@@ -31,13 +31,14 @@ def get_args():
         help="Path to CSV files directory",
     )
     parser.add_argument(
-        "--save_model",
+        "--save_dir",
+        "-s",
         type=str,
         default="best_cnn.pth",
         help="Path to save the best model",
     )
     parser.add_argument(
-        "--num_epochs", type=int, default=75, help="Number of training epochs"
+        "--num_epochs", "-ep", type=int, default=75, help="Number of training epochs"
     )
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
     parser.add_argument(
@@ -50,7 +51,16 @@ def get_args():
     parser.add_argument(
         "--fraction", type=float, default=1.0, help="Fraction of dataset to use"
     )
-
+    parser.add_argument(
+        "--model",
+        type=str,
+        default="cnn",
+        help="Model to train (cnn/unet)",
+        choices=["cnn", "unet"],
+    )
+    parser.add_argument(
+        "--train", action="store_true", help="Train the model"
+    )
     return parser.parse_args()
 
 
@@ -80,7 +90,7 @@ def evaluate(loader, model, device, criterion, confusion_matrix=False):
     false_negatives = 0
     true_positives = 0
     true_negatives = 0
-    
+
     with torch.no_grad():
         for images, labels in tqdm(loader, desc="Evaluating", leave=False):
             images, labels = images.to(device), labels.to(device)
@@ -92,7 +102,7 @@ def evaluate(loader, model, device, criterion, confusion_matrix=False):
             _, predicted = torch.max(outputs, 1)
             total_samples += labels.size(0)
             correct += (predicted == labels).sum().item()
-            
+
             if confusion_matrix:
                 for predict, label in zip(predicted, labels):
                     if predict == 0 and label == 0:
@@ -103,18 +113,16 @@ def evaluate(loader, model, device, criterion, confusion_matrix=False):
                         false_positives += 1
                     elif predict == 1 and label == 1:
                         true_positives += 1
-            
+
     if confusion_matrix:
         # print confusion matrix
-            print(
-                "\nConfusion Matrix:\n"
-                f"{'':<20} | {'Predicted 0':<15} | {'Predicted 1':<15}\n"
-                f"{'-'*20}-+-{'-'*15}-+-{'-'*15}\n"
-                f"{'Actual 0':<20} | {true_negatives:<15} | {false_positives:<15}\n"
-                f"{'Actual 1':<20} | {false_negatives:<15} | {true_positives:<15}"
-            )
-                    
-                
+        print(
+            "\nConfusion Matrix:\n"
+            f"{'':<20} | {'Predicted 0':<15} | {'Predicted 1':<15}\n"
+            f"{'-'*20}-+-{'-'*15}-+-{'-'*15}\n"
+            f"{'Actual 0':<20} | {true_negatives:<15} | {false_positives:<15}\n"
+            f"{'Actual 1':<20} | {false_negatives:<15} | {true_positives:<15}"
+        )
 
     accuracy = 100.0 * correct / total_samples
     avg_loss = total_loss / total_samples
@@ -141,10 +149,8 @@ def train(
         correct = 0
         total_samples = 0
 
-        loop = tqdm(
-            train_loader, desc=f"Epoch [{epoch+1}/{num_epochs}]", leave=False
-        )
-        
+        loop = tqdm(train_loader, desc=f"Epoch [{epoch+1}/{num_epochs}]", leave=False)
+
         for images, labels in loop:
             images, labels = images.to(device), labels.to(device)
 
@@ -158,7 +164,7 @@ def train(
             _, predicted = torch.max(outputs, 1)
             total_samples += labels.size(0)
             correct += (predicted == labels).sum().item()
-            
+
             # Update progress bar
             loop.set_postfix(
                 {
@@ -251,26 +257,32 @@ def main():
         num_workers=4,
         pin_memory=True,
     )
-    
-    # model = CNN().to(device)
-    model = UNet().to(device)
 
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
+    if args.model == "cnn":
+        model = CNN().to(device)
+        initialize_weights(model)
+    else:
+        model = UNet().to(device)
 
-    train(
-        model,
-        train_loader,
-        valid_loader,
-        optimizer,
-        criterion,
-        device,
-        args.num_epochs,
-        args.patience,
-        args.save_model,
-    )
+    if args.train:
+        logging.info(f"Training {args.model} model for {args.num_epochs} epochs.")
+        
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
-    model.load_state_dict(torch.load(args.save_model))
+        train(
+            model,
+            train_loader,
+            valid_loader,
+            optimizer,
+            criterion,
+            device,
+            args.num_epochs,
+            args.patience,
+            args.save_dir,
+        )
+
+    model.load_state_dict(torch.load(args.save_dir))
     test_acc, _ = evaluate(test_loader, model, device, criterion, True)
     logging.info(f"Test Accuracy: {test_acc:.2f}%")
 
