@@ -70,6 +70,14 @@ class DeepFakeDataset(Dataset):
         
         return image, 1
     
+    def get_image_by_path(self, path):
+        image = io.imread(path)
+        
+        if self.transform:
+            image = self.transform(image)
+        
+        return image
+    
 
 def get_dataloaders(path: str, batch_size: int, transform: object, fraction: float = 1):
     train_dataset = DeepFakeDataset(

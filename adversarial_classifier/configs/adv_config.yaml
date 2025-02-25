@@ -1,13 +1,59 @@
 train-adversary-all-real:
-  data-dir: D:\Programs\VS repos\Fool the model\fool-the-model\data
-  classifier-path: D:/Programs/VS repos/Fool the model/fool-the-model/best_dt.pkl
-  save-path: D:\Programs\VS repos\Fool the model\fool-the-model\results\adversarial\good_perception\e01_allreal_adversary.pth
+  model: cnn
+  data-dir: ../data
+  classifier-path: ../results/deepfake/cnn_65_99.03.pth
+  save-path: ../results/adversarial/good_perception/e01_allreal_adversary.pth
   img-size: 128
   batch-size: 12
   lr: 0.0002
   epochs: 100
-  lper: 0.1 # Deactivate
+  lper: 0 # Deactivate
+  lpixel: 0 # Deactivate
   seed: 42
   dataset-fraction: 0.01
   epsilon: 0.01
-  
+
+train-adversary-unet-all-real:
+  model: unet
+  data-dir: ../data
+  classifier-path: ../results/unet_classifier/unet_99acc.pth
+  save-path: ../results/adversarial/unet_good_perception/e01_allreal_adversary.pth
+  img-size: 128
+  batch-size: 1
+  lr: 0.0002
+  epochs: 100
+  lper: 0 # Deactivate
+  lpixel: 0 # Deactivate
+  seed: 42
+  dataset-fraction: 1
+  epsilon: 0.01
+
+evaluate-adversary-cnn-in-unet:
+  model: unet
+  data-dir: ../data
+  classifier-path: ../results/unet_classifier/unet_99acc.pth
+  save-path: ../results/adversarial/good_perception/e01_allreal_adversary.pth
+  img-size: 128
+  batch-size: 12
+  lr: 0.0002
+  epochs: 100
+  lper: 0 # Deactivate
+  lpixel: 0 # Deactivate
+  seed: 42
+  dataset-fraction: 1
+  epsilon: 0.01
+
+evaluate-adversary-unet-in-cnn:
+  model: cnn
+  data-dir: ../data
+  classifier-path: ../results/deepfake/cnn_65_99.03.pth
+  save-path: ../results/adversarial/unet_good_perception/e01_allreal_adversary.pth
+  img-size: 128
+  batch-size: 12
+  lr: 0.0002
+  epochs: 100
+  lper: 0 # Deactivate
+  lpixel: 0 # Deactivate
+  seed: 42
+  dataset-fraction: 1
+  epsilon: 0.01

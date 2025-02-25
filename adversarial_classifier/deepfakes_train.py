@@ -13,6 +13,7 @@ from tqdm import tqdm
 from dataloader.dataloader import DeepFakeDataset
 from arch.deepfake_cnn import CNN
 from arch.decision_tree import DTClassifier as DT
+from arch.unet_classifier import SmallUNet as UNet
 
 
 def get_args():
@@ -46,6 +47,9 @@ def get_args():
         "--patience", type=int, default=5, help="Early stopping patience"
     )
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
+    parser.add_argument(
+        "--fraction", type=float, default=1.0, help="Fraction of dataset to use"
+    )
 
     return parser.parse_args()
 
@@ -137,15 +141,16 @@ def train(
         correct = 0
         total_samples = 0
 
-        for images, labels in tqdm(
-            train_loader, desc=f"Epoch {epoch + 1}/{num_epochs}", leave=False
-        ):
+        loop = tqdm(
+            train_loader, desc=f"Epoch [{epoch+1}/{num_epochs}]", leave=False
+        )
+        
+        for images, labels in loop:
             images, labels = images.to(device), labels.to(device)
 
             optimizer.zero_grad()
             outputs = model(images)
             loss = criterion(outputs, labels)
-
             loss.backward()
             optimizer.step()
 
@@ -153,6 +158,14 @@ def train(
             _, predicted = torch.max(outputs, 1)
             total_samples += labels.size(0)
             correct += (predicted == labels).sum().item()
+            
+            # Update progress bar
+            loop.set_postfix(
+                {
+                    "Loss": loss.item(),
+                    "Accuracy": 100.0 * correct / total_samples,
+                }
+            )
 
         train_acc = 100.0 * correct / total_samples
         train_loss = total_loss / total_samples
@@ -202,16 +215,19 @@ def main():
         csv_file=os.path.join(args.csv_dir, "train.csv"),
         root_dir=args.data_dir,
         transform=transform,
+        fraction=args.fraction,
     )
     valid_dataset = DeepFakeDataset(
         csv_file=os.path.join(args.csv_dir, "valid.csv"),
         root_dir=args.data_dir,
         transform=transform,
+        fraction=args.fraction,
     )
     test_dataset = DeepFakeDataset(
         csv_file=os.path.join(args.csv_dir, "test.csv"),
         root_dir=args.data_dir,
         transform=transform,
+        fraction=args.fraction,
     )
 
     train_loader = DataLoader(
@@ -236,8 +252,9 @@ def main():
         pin_memory=True,
     )
     
-    model = CNN().to(device)
-    model.apply(initialize_weights)
+    # model = CNN().to(device)
+    model = UNet().to(device)
+
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
