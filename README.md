@@ -12,9 +12,7 @@ A framework for training and evaluating adversarial attacks against DeepFake cla
 - [Fool-the-Model](#fool-the-model)
   - [Contents](#contents)
   - [Requirements](#requirements)
-    - [(Optional) Micromamba](#optional-micromamba)
-    - [2. Python 3.12 or higher](#2-python-312-or-higher)
-    - [3. Install Dependencies](#3-install-dependencies)
+    - [Install Dependencies](#install-dependencies)
   - [Download Dataset](#download-dataset)
     - [(Linux only) Alternative Dataset Download](#linux-only-alternative-dataset-download)
   - [Usage](#usage)
@@ -25,15 +23,15 @@ A framework for training and evaluating adversarial attacks against DeepFake cla
 
 ## Requirements
 
-### (Optional) Micromamba
+We recommend using an environment manager to create an isolated environment for this project.
+
 > [!TIP]
 > We recommend using [Micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html) for faster environment management.
 
-### 2. Python 3.12 or higher
 > [!IMPORTANT]
-> Ensure you have Python >= 3.12 installed. You can use system Python or a conda/mamba environment.
+> Ensure you have Python >= 3.12 installed. You can use system Python or your environment manager to install Python.
 
-### 3. Install Dependencies
+### Install Dependencies
 Run the following command to install the required dependencies:
 
 ```bash
