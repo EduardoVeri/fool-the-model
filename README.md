@@ -1,7 +1,7 @@
 # Fool-the-Model
 
 
-This repository contains the final project for Information Security course at the University of Campinas (UNICAMP). The project aims to develop adversarial perturbations against DeepFake classifiers. The project is divided into two main parts: the development of DeepFake classifiers and the generation of adversarial examples to fool these classifiers. 
+This repository contains the final project for Information Security course at the University of Campinas (UNIFESP). The project aims to develop adversarial perturbations against DeepFake classifiers. The project is divided into two main parts: the development of DeepFake classifiers and the generation of adversarial examples to fool these classifiers. 
 
 Read more in the project report ["Fool the Model: Developing Adversarial Perturbations Against DeepFake Classifiers"](./docs/main.pdf).
 
