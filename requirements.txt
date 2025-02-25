@@ -12,5 +12,6 @@ argparse
 joblib
 scikit-learn
 xgboost
+PyWavelets
 scikit-image
 pandas
