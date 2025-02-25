@@ -1,0 +1,408 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% How to use writeLaTeX: 
+%
+% You edit the source code here on the left, and the preview on the
+% right shows you the result within a few seconds.
+%
+% Bookmark this page and share the URL with your co-authors. They can
+% edit at the same time!
+%
+% You can upload figures, bibliographies, custom classes and
+% styles using the files menu.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% chktex-file 44
+
+\documentclass[12pt]{article}
+
+\usepackage{sbc-template}
+
+\usepackage{graphicx,url}
+
+\usepackage[brazil]{babel}
+\usepackage[utf8]{inputenc}
+
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{amsmath} 
+\usepackage{tikz}
+\usepackage{subfigure}
+\usepackage{float}
+
+% Definição de cores personalizadas
+\definecolor{mygreen}{rgb}{0,0.6,0}        % Para comentários
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}       % Para números de linha
+\definecolor{mymauve}{rgb}{0.58,0,0.82}       % Para strings
+\definecolor{myblue}{rgb}{0,0,0.8}            % Para palavras-chave
+\definecolor{lightgray}{rgb}{0.95,0.95,0.95}  % Fundo dos códigos
+
+% Configuração padrão para todos os códigos
+\lstset{
+  backgroundcolor=\color{lightgray},
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  captionpos=b,
+  numbers=left,
+  numberstyle=\tiny\color{mygray},
+  frame=single,
+  keywordstyle=\color{myblue}\bfseries,
+  commentstyle=\color{mygreen}\itshape,
+  stringstyle=\color{mymauve},
+  tabsize=4,
+  showstringspaces=false,
+  aboveskip=10pt,
+  belowskip=5pt
+}
+% Estilo para código em C
+\lstdefinestyle{CStyle}{
+  language=C,
+  % Outras opções específicas para C podem ser adicionadas aqui
+}
+
+% Definindo uma linguagem para CUDA baseada em C++
+\lstdefinelanguage{CUDA}[]{C++}{
+  morekeywords={__global__, __device__, __shared__, __host__},
+  % Caso necessário, adicione mais palavras-chave ou opções específicas
+}
+
+% Estilo para código em Python
+\lstdefinestyle{PythonStyle}{
+  language=Python,
+  morekeywords=[2]{SequentialDiffusionEquation,with,OMPdiffusionEquation,CUDADiffusionEquation},
+  % Outras opções específicas para Python podem ser adicionadas aqui
+}
+
+\renewcommand{\lstlistingname}{Código}
+
+\sloppy
+
+\title{Engane a IA: Desenvolvendo Perturbações Adversariais Contra Classificadores de DeepFake}
+
+\author{Eduardo Verissimo Faccio, Guilherme Ferreira Lourenço}
+
+\address{Instituto de Ciência e Tecnologia -- Universidade Federal de São Paulo
+  (UNIFESP)\\
+  São José dos Campos -- SP -- Brasil
+  \email{\{verissimo.eduardo,gflourenco\}@unifesp.br}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{resumo}
+  Este trabalho explora a vulnerabilidade e a robustez de redes neurais diante de ataques adversariais
+  imperceptíveis aos humanos. Utilizando a base de dados “140k Real and Fake Faces”, treinou-se uma rede
+  neural convolucional, uma mini UNET e um XGBoost para a classificação de imagens faciais, atingindo alta
+  acurácia em condições normais. Em seguida, desenvolveu-se um ataque adversarial baseado em uma arquitetura
+  UNET modificada, capaz de gerar perturbações sutis que comprometem significativamente a performance do classificador.
+  Os resultados demonstram que, mesmo com perturbações invisíveis a olho nu, a confiabilidade dos sistemas de reconhecimento
+  facial pode ser severamente comprometida, ressaltando a importância de desenvolver estratégias para aumentar
+  a resiliência dos classificadores.
+
+  \textbf{Palavras-chave}: Ataques adversariais, robustez, redes neurais convolucionais, perturbações imperceptíveis, reconhecimento facial, XGBoost.
+\end{resumo}
+
+\section{Introdução}
+
+O avanço das técnicas de aprendizado profundo tem permitido que sistemas de
+reconhecimento facial alcancem níveis de acurácia sem precedentes, contribuindo
+para uma ampla gama de aplicações, desde segurança pública até interfaces de
+usuário baseadas em biometria~\cite{parkhi2015deep}. Entretanto, apesar do
+desempenho elevado, diversos estudos demonstraram que redes neurais são
+inerentemente vulneráveis a perturbações adversariais - pequenas modificações
+imperceptíveis a olho nu que podem levar a classificações
+equivocadas~\cite{szegedy2014intriguingpropertiesneuralnetworks,goodfellow2015explainingharnessingadversarialexamples}.
+
+Neste contexto, o presente trabalho investiga a robustez de modelos de
+classificação de imagens faciais quando expostos a ataques adversariais sutis.
+Utilizando a base de dados ``140k Real and Fake Faces'', foram treinados três
+classificadores distintos - uma rede neural convolucional (CNN), uma versão
+reduzida de UNET~\cite{} e um classificador baseado em XGBoost~\cite{Chen_2016}
+a - que, sob condições normais, alcançaram alta performance. Em seguida,
+propõe-se um ataque adversarial que se baseia em uma arquitetura UNET
+modificada, cujo objetivo é gerar perturbações imperceptíveis que comprometam a
+confiabilidade dos classificadores.
+
+Ao integrar modelos de naturezas distintas na análise, este estudo busca
+identificar possíveis diferenças na robustez dos sistemas frente a ataques
+adversariais, evidenciando as limitações dos métodos de classificação atuais e
+a necessidade de desenvolver estratégias de defesa que aumentem a resiliência
+dos sistemas de reconhecimento facial. A abordagem proposta não só contribui
+para uma compreensão mais aprofundada das vulnerabilidades dos modelos de
+aprendizado profundo, mas também sugere caminhos para a implementação de
+mecanismos de defesa que possam mitigar os impactos desses ataques em
+aplicações críticas.
+
+\section{Referencial Teórico}
+\subsection{Redes Neurais Convolucionais e Reconhecimento Facial}
+Redes neurais convolucionais (CNNs) têm se destacado no processamento de
+imagens devido à sua capacidade de extrair automaticamente características
+hierárquicas, desde padrões simples, como bordas e texturas, até estruturas
+complexas, essenciais para o reconhecimento facial. Estudos como o de Parkhi et
+al. (2015) demonstram que a utilização de arquiteturas profundas permite
+alcançar altos índices de acurácia, tornando as CNNs a escolha preferencial
+para aplicações em biometria.
+
+\subsection{Ataques Adversariais}
+Apesar do elevado desempenho, as CNNs são vulneráveis a perturbações
+adversariais - pequenas modificações intencionais e imperceptíveis na entrada
+que podem levar a classificações errôneas. Szegedy et al. (2013) foram
+pioneiros ao evidenciar essa fragilidade, enquanto Goodfellow et al. (2014)
+apresentaram o Fast Gradient Sign Method (FGSM) para gerar tais perturbações.
+Esses ataques exploram a alta dimensionalidade dos dados e a complexidade dos
+espaços de decisão dos modelos, comprometendo a confiabilidade dos sistemas de
+reconhecimento facial.
+
+\subsection{Estratégias de Geração de Perturbações}
+Diversas técnicas de ataque adversarial têm sido propostas, muitas baseadas na
+otimização da função de perda do modelo. Entre elas, o FGSM e suas variações
+mostram alta eficácia na geração de exemplos adversariais. No presente
+trabalho, adota-se uma abordagem inovadora que utiliza uma arquitetura UNET
+modificada para criar perturbações sutis. Essa rede adversarial é treinada para
+gerar modificações que se mantenham dentro de um intervalo pré-definido (por
+exemplo, [epsilon]), garantindo que as alterações sejam imperceptíveis ao olho
+humano, mas capazes de degradar significativamente a performance dos
+classificadores.
+
+\subsection{Outros Classificadores e Robustez dos Modelos}
+Além das CNNs, outros classificadores, como UNET e o XGBoost, têm sido
+empregados em problemas de classificação de imagens. O XGBoost, conforme
+descrito por Chen Guestrin (2016), utiliza técnicas de boosting que o tornam
+robusto e eficiente, especialmente em cenários com dados de alta
+dimensionalidade. A comparação entre esses modelos permite avaliar a
+variabilidade na robustez frente a ataques adversariais, demonstrando que,
+mesmo que a mesma perturbação seja aplicada, a sensibilidade de cada modelo
+pode variar, evidenciando a necessidade de estratégias de defesa que aumentem a
+resiliência global dos sistemas de reconhecimento facial.
+
+\subsection{Transferibilidade dos Ataques e Estratégias de Defesa}
+Um aspecto crítico dos ataques adversariais é a sua capacidade de
+transferência, isto é, a perturbação gerada para um modelo pode afetar outros
+modelos, mesmo que estes tenham arquiteturas distintas. Essa propriedade
+aumenta a ameaça dos ataques em cenários do mundo real, onde o atacante pode
+não ter acesso direto ao modelo alvo. Compreender e mitigar essa transferência
+é fundamental para o desenvolvimento de mecanismos de defesa robustos que
+assegurem a integridade dos sistemas de reconhecimento facial em ambientes
+críticos.
+
+\section{Metodologia}
+
+A abordagem adotada neste trabalho visa investigar a robustez de
+classificadores de imagens faciais frente a ataques adversariais
+imperceptíveis. Para isso, a metodologia foi dividida em três etapas
+principais: (i) preparação e treinamento dos modelos, (ii) desenvolvimento do
+ataque adversarial e (iii) avaliação dos resultados.
+
+\subsection{Preparação dos Dados e Treinamento dos Modelos}
+
+A base de dados utilizada foi a \textit{``140k Real and Fake Faces''}, composta
+por imagens reais e geradas, que foram previamente divididas em conjuntos de
+treinamento, validação e teste. A seguir, três modelos foram treinados para a
+classificação de imagens faciais:
+
+\begin{itemize}
+  \item \textbf{Rede Neural Convolucional (CNN):} Implementada em PyTorch, esta arquitetura
+        é composta por camadas convolucionais, seguidas por camadas de pooling, normalização e
+        camadas totalmente conectadas. Os hiperparâmetros, tais como taxa de aprendizado
+        (\texttt{[learning\_rate]}), número de épocas (\texttt{[epochs]}) e tamanho do batch
+        (\texttt{[batch\_size]}), foram ajustados para maximizar a acurácia no conjunto de validação.
+
+        \begin{figure}[htbp]
+          \centering
+
+          \begin{tikzpicture}[scale=0.5, transform shape, node distance=1.5cm, auto]
+            % Nodes for CNN
+            \node [draw, rectangle, align=center] (inputcnn) {Input\\(128x128x3)};
+            \node [draw, rectangle, align=center, below of=inputcnn] (conv1) {Conv 1\\(3$\to$32)};
+            \node [draw, rectangle, align=center, below of=conv1] (pool1) {Max Pool};
+            \node [draw, rectangle, align=center, below of=pool1] (conv2) {Conv 2\\(32$\to$64)};
+            \node [draw, rectangle, align=center, below of=conv2] (pool2) {Max Pool};
+            \node [draw, rectangle, align=center, below of=pool2] (conv3) {Conv 3\\(64$\to$128)};
+            \node [draw, rectangle, align=center, below of=conv3] (pool3) {Max Pool};
+            \node [draw, rectangle, align=center, below of=pool3] (conv4) {Conv 4\\(128$\to$256)};
+            \node [draw, rectangle, align=center, below of=conv4] (pool4) {Max Pool};
+            \node [draw, rectangle, align=center, below of=pool4] (global) {Global Avg Pool};
+            \node [draw, rectangle, align=center, below of=global] (fc1) {FC 1};
+            \node [draw, rectangle, align=center, below of=fc1] (fc2) {FC 2};
+            \node [draw, rectangle, align=center, below of=fc2] (fc3) {FC 3\\(2 classes)};
+
+            % Arrows for CNN
+            \draw [->] (inputcnn) -- (conv1);
+            \draw [->] (conv1) -- (pool1);
+            \draw [->] (pool1) -- (conv2);
+            \draw [->] (conv2) -- (pool2);
+            \draw [->] (pool2) -- (conv3);
+            \draw [->] (conv3) -- (pool3);
+            \draw [->] (pool3) -- (conv4);
+            \draw [->] (conv4) -- (pool4);
+            \draw [->] (pool4) -- (global);
+            \draw [->] (global) -- (fc1);
+            \draw [->] (fc1) -- (fc2);
+            \draw [->] (fc2) -- (fc3);
+          \end{tikzpicture}
+          \caption{Diagrama das arquiteturas dos modelos utilizados no trabalho.}
+        \end{figure}
+
+  \item \textbf{Mini UNET:} Uma versão reduzida da tradicional arquitetura UNET foi
+        desenvolvida para explorar sua capacidade em extrair características e classificar as
+        imagens, mantendo uma complexidade computacional inferior.
+
+  \item \textbf{XGBoost:} Utilizando o framework XGBoost~\cite{Chen_2016}, foi treinado
+        um classificador baseado em boosting, que se mostrou eficiente para problemas de alta
+        dimensionalidade.
+\end{itemize}
+
+Todos os modelos foram treinados sob condições normais, atingindo altos índices
+de acurácia no conjunto de teste.
+
+\subsection{Desenvolvimento do Ataque Adversarial}
+
+Após o treinamento dos classificadores, desenvolveu-se um ataque adversarial
+com o objetivo de gerar perturbações sutis e imperceptíveis que comprometem a
+confiabilidade dos modelos. Para isso, foi utilizada uma arquitetura UNET
+modificada, denominada rede adversarial, que recebe como entrada uma imagem
+normalizada (em escala \([-1, 1]\)) e gera uma perturbação. Essa perturbação é
+então limitada por um mecanismo de \textit{clamp}, de forma a garantir que as
+alterações não excedam um intervalo pré-definido \([-\epsilon, \epsilon]\).
+Formalmente, a imagem adversarial \( \text{adv\_x} \) é obtida através da
+equação:
+
+\[
+  \text{adv\_x} = \text{clamp}\Bigl(x + \text{clamp}\bigl(\text{Perturbação}(x), -[\epsilon], [\epsilon]\bigr), -1, 1\Bigr)
+\]
+
+onde \( x \) representa a imagem original. Essa abordagem assegura que as
+modificações sejam imperceptíveis ao olho humano, mas capazes de induzir erros
+nos classificadores.
+\begin{figure}[ht]
+  \centering
+  \begin{tikzpicture}[scale=0.5, transform shape, node distance=1.5cm, auto]
+    % Nodes for adversarial network
+    \node [draw, rectangle, align=center] (input) {Input\\(128x128x3)};
+    \node [draw, rectangle, align=center, below of=input] (down1) {DownBlock 1\\(128$\to$64)};
+    \node [draw, rectangle, align=center, below of=down1] (down2) {DownBlock 2\\(64$\to$32)};
+    \node [draw, rectangle, align=center, below of=down2] (bottleneck) {Residual Block};
+    \node [draw, rectangle, align=center, below of=bottleneck] (up1) {UpBlock 1\\(32$\to$64)};
+    \node [draw, rectangle, align=center, below of=up1] (up2) {UpBlock 2\\(64$\to$128)};
+    \node [draw, rectangle, align=center, below of=up2] (final) {Final Conv\\(128x128x3)};
+
+    % Arrows for adversarial network
+    \draw [->] (input) -- (down1);
+    \draw [->] (down1) -- (down2);
+    \draw [->] (down2) -- (bottleneck);
+    \draw [->] (bottleneck) -- (up1);
+    \draw [->] (up1) -- (up2);
+    \draw [->] (up2) -- (final);
+
+    % Perturbação: using a tabular to force safe line breaks
+    \node [right of=final, xshift=2.5cm, align=center] (clamp) {%
+      \begin{tabular}{c}
+        Clamp                  \\[2pt]
+        $[-\epsilon,\epsilon]$ \\[2pt]
+        Perturbação
+      \end{tabular}
+    };
+    \draw [->] (final) -- (clamp);
+  \end{tikzpicture}
+  \caption{Diagrama das arquiteturas dos modelos utilizados no trabalho.}
+\end{figure}
+
+\subsection{Avaliação dos Resultados}
+
+A robustez dos modelos foi avaliada comparando a acurácia obtida sob condições
+normais com a acurácia após a aplicação dos ataques adversariais.
+Adicionalmente, a técnica GradCAM foi utilizada para visualizar as regiões de
+maior atenção dos modelos, permitindo identificar quais áreas (por exemplo,
+olhos e lábios) são mais suscetíveis às perturbações.
+
+A avaliação abrangeu os três classificadores de forma integrada, possibilitando
+comparar a sensibilidade de cada modelo frente às perturbações geradas pela
+rede adversarial. Os resultados quantitativos (como a redução percentual da
+acurácia) e as análises qualitativas (obtidas via GradCAM) forneceram uma visão
+abrangente sobre as vulnerabilidades dos sistemas de reconhecimento facial.
+
+\section{Experimentos e Resultados}
+
+\subsection{Configuração Experimental}
+Foram realizados experimentos para avaliar a robustez dos três classificadores
+(CNN, Mini UNET e XGBoost) sob duas condições:
+\begin{itemize}
+  \item \textbf{Condições Normais:} Treinamento e avaliação dos modelos sem a aplicação de ataques adversariais.
+  \item \textbf{Condições Adversariais:} Avaliação dos modelos após a aplicação do ataque adversarial, que utiliza uma arquitetura UNET modificada para gerar perturbações sutis e imperceptíveis.
+\end{itemize}
+
+Todos os modelos foram treinados utilizando a base de dados ``140k Real and
+Fake Faces''. Os hiperparâmetros (por exemplo, \texttt{[learning\_rate]},
+\texttt{[epochs]}, \texttt{[batch\_size]}) foram otimizados para maximizar a
+acurácia no conjunto de validação. Para avaliação, foram consideradas métricas
+como acurácia, precisão, recall e F1-Score. Adicionalmente, técnicas de
+visualização (GradCAM) foram empregadas para analisar qualitativamente as
+regiões de maior atenção dos modelos.
+
+\subsection{Resultados Quantitativos}
+As Tabelas~\ref{tab:resultados_quantitativos}~e~\ref{tab:resultados_metricas}
+apresentam os resultados obtidos sob condições normais e adversariais.
+
+\begin{table}[H]
+  \centering
+  \caption{Desempenho dos modelos sob condições normais e adversariais}\label{tab:resultados_quantitativos}
+  \begin{tabular}{lccc}
+    \hline
+    \textbf{Modelo} & \textbf{Acurácia Normal (\%)} & \textbf{Acurácia Adversarial (\%)} & \textbf{Redução (\%)} \\
+    \hline
+    CNN             & [AC\_N\_CNN]                  & [AC\_A\_CNN]                       & [Redu\_CNN]           \\
+    Mini UNET       & [AC\_N\_UNET]                 & [AC\_A\_UNET]                      & [Redu\_UNET]          \\
+    XGBoost         & [AC\_N\_XGB]                  & [AC\_A\_XGB]                       & [Redu\_XGB]           \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Métricas de desempenho sob ataque adversarial}\label{tab:resultados_metricas}
+  \begin{tabular}{lccc}
+    \hline
+    \textbf{Modelo} & \textbf{Precisão (\%)} & \textbf{Recall (\%)} & \textbf{F1-Score (\%)} \\
+    \hline
+    CNN             & [Prec\_CNN]            & [Rec\_CNN]           & [F1\_CNN]              \\
+    Mini UNET       & [Prec\_UNET]           & [Rec\_UNET]          & [F1\_UNET]             \\
+    XGBoost         & [Prec\_XGB]            & [Rec\_XGB]           & [F1\_XGB]              \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\subsection{Resultados Qualitativos}
+Para complementar a análise quantitativa, empregou-se a técnica GradCAM para
+identificar as regiões de atenção dos modelos. As
+Figuras~\ref{fig:gradcam_original} e~\ref{fig:gradcam_adversarial} ilustram
+exemplos de imagens originais e suas versões adversariais, destacando
+alterações nas áreas de interesse (por exemplo, olhos e lábios).
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.45\textwidth]{gradcam_original.png}
+  \includegraphics[width=0.45\textwidth]{gradcam_adversarial.png}
+  \caption{Exemplos de visualização GradCAM: (a) imagem original; (b) imagem adversarial.}\label{fig:gradcam}
+\end{figure}
+
+\subsection{Discussão dos Resultados}
+Os experimentos demonstraram que a aplicação do ataque adversarial provocou uma
+redução significativa na performance dos modelos, conforme evidenciado pela
+diminuição da acurácia e alterações nas métricas de precisão, recall e F1-Score
+(ver
+Tabelas~\ref{tab:resultados_quantitativos}~e~\ref{tab:resultados_metricas}). A
+análise qualitativa via GradCAM indicou que as regiões sensíveis, como os olhos
+e lábios, foram alteradas de forma a comprometer a tomada de decisão dos
+classificadores. Esses resultados ressaltam a importância de se desenvolver
+estratégias de defesa para aumentar a robustez dos sistemas de reconhecimento
+facial.
+
+\section{Conclusão}
+
+\bibliographystyle{sbc}
+\bibliography{sbc-template}
+\nocite{*}
+\end{document}
